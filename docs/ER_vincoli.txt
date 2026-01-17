@@ -1,0 +1,23 @@
+Vincoli non esprimibili nello schema E-R
+
+1. Vincolo di sovrapposizione delle prenotazioni
+    - Non possono esistere due prenotazioni che occupino la stessa sala in intervalli di tempo sovrapposti.
+2. Vincolo sugli orari di prenotazione
+    - Le prenotazioni delle sale possono avvenire esclusivamente per ore intere e solo nella fascia oraria compresa tra le 9:00 e le 23:00.
+3. Vincolo di autorizzazione alla creazione delle prenotazioni
+    - Solo gli iscritti che ricoprono il ruolo di responsabile di settore possono creare prenotazioni
+4. Vincolo di prenotazione sale. 
+    - Un responsabile può creare una prenotazione per una sala solo se il Tipo del settore di cui è responsabile coincide con il Tipo del settore a cui appartiene la sala prenotata. (Esempio: Il responsabile di un settore di tipo "Musica" può prenotare qualsiasi sala appartenente a settori di tipo "Musica", anche se non è il suo specifico settore).
+4. Vincolo di partecipazione su invito  
+    - Un iscritto può partecipare a una prenotazione solo se ha ricevuto un invito relativo a quella prenotazione.
+5. Vincolo di capienza della sala
+    - Il numero di iscritti che confermano la partecipazione a una prenotazione non può superare la capienza massima della sala associata alla prenotazione.
+6. Vincolo di risposta all’invito
+    - Per ogni invito associato a una prenotazione, l’iscritto può: 
+        - confermare la propria presenza
+        - declinare l’invito specificando una motivazione.
+    In entrambi i casi deve essere registrata la data della risposta.
+7. Vincolo di notifica all’organizzatore
+    - Ogni risposta a un invito (accettazione o rifiuto) deve generare una notifica al responsabile che ha creato la prenotazione.
+8. Vincolo di unicità della risposta
+    - Ogni iscritto può fornire una sola risposta per ciascun invito relativo a una prenotazione.

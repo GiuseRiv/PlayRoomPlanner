@@ -1,0 +1,8 @@
+1. Si assume che ogni responsabile di settore sia necessariamente un iscritto dell’associazione; pertanto non è stata introdotta un’entità autonoma Responsabile, ma il ruolo di responsabile è modellato come relazione tra Iscritto e Settore con attributi propri.
+2. Si assume che un iscritto possa ricoprire il ruolo di responsabile per più settori contemporaneamente.
+3. Si assume che il ruolo dell’iscritto (docente, allievo, tecnico) sia un attributo dell’entità Iscritto e non una specializzazione, in quanto non sono richiesti comportamenti o attributi distinti aggiuntivi per ciascun ruolo.
+5. Si assume che le dotazioni di supporto siano intese come tipologie di dotazioni (ad esempio: strumenti musicali, impianti audio, specchi, palcoscenico) e non come singoli oggetti fisici; pertanto la stessa tipologia di dotazione può essere associata a più sale.
+6. Si assume che una prenotazione riguardi una sola sala; nel caso di attività che richiedano più sale, esse devono essere modellate tramite più prenotazioni distinte.
+7. Si assume che solo gli iscritti che hanno ricevuto un invito possano partecipare a una prenotazione; la partecipazione senza invito non è ammessa.
+8. Si assume che gli inviti agli iscritti siano modellati come associazione tra Iscritto e Prenotazione, con attributi che permettono di rappresentare l’esito della risposta (accettazione o rifiuto), la data della risposta e l’eventuale motivazione del rifiuto.
+9. Si assume che le modalità di selezione degli invitati (tutti gli iscritti, iscritti di un settore, iscritti con un certo ruolo) siano considerate meccanismi applicativi e non concetti strutturali del modello E-R.
