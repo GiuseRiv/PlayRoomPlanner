@@ -12,40 +12,36 @@ $id = $_GET['id'] ?? null;
 
 try {
     if ($method === 'POST') {
-        // Legge il corpo della richiesta JSON
         $data = json_decode(file_get_contents('php://input'), true);
-        
-        if (!$data) {
-            throw new Exception("Dati non validi");
-        }
-
-        $stmt = $pdo->prepare("INSERT INTO Iscritto (nome, cognome, email, ruolo, data_nascita) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([
-            $data['nome'], 
-            $data['cognome'], 
-            $data['email'], 
-            $data['ruolo'] ?? 'allievo',
-            $data['data_nascita']
-        ]);
-        
+        $stmt = $pdo->prepare("INSERT INTO utenti (nome, cognome, email, ruolo) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$data['nome'], $data['cognome'] ?? '', $data['email'], $data['ruolo'] ?? 'allievo']);
         http_response_code(201);
-        echo json_encode(['status' => 'success', 'id_iscritto' => $pdo->lastInsertId()]);
+        echo json_encode(['id' => $pdo->lastInsertId()]);
     } elseif ($method === 'GET') {
         if ($id) {
-            $stmt = $pdo->prepare("SELECT * FROM Iscritto WHERE id_iscritto = ?");
+            $stmt = $pdo->prepare("SELECT * FROM utenti WHERE id = ?");
             $stmt->execute([$id]);
-            $user = $stmt->fetch();
-            echo json_encode($user ?: ['error' => 'Utente non trovato']);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            echo json_encode($user ?: ['error' => 'Non trovato']);
         } else {
-            $stmt = $pdo->query("SELECT * FROM Iscritto");
-            echo json_encode($stmt->fetchAll());
+            $stmt = $pdo->query("SELECT * FROM utenti");
+            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
         }
+    } elseif ($method === 'PUT' && $id) {
+        $data = json_decode(file_get_contents('php://input'), true);
+        $stmt = $pdo->prepare("UPDATE utenti SET nome=?, cognome=?, email=? WHERE id=?");
+        $stmt->execute([$data['nome'], $data['cognome'], $data['email'], $id]);
+        echo json_encode(['updated' => $stmt->rowCount() > 0]);
+    } elseif ($method === 'DELETE' && $id) {
+        $stmt = $pdo->prepare("DELETE FROM utenti WHERE id=?");
+        $stmt->execute([$id]);
+        echo json_encode(['deleted' => $stmt->rowCount() > 0]);
     } else {
         http_response_code(405);
-        echo json_encode(['error' => 'Metodo non supportato']);
+        echo json_encode(['error' => 'Metodo non valido']);
     }
 } catch (Exception $e) {
     http_response_code(400);
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    echo json_encode(['error' => $e->getMessage()]);
 }
 ?>

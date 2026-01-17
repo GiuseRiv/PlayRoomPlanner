@@ -1,0 +1,184 @@
+/* RESET BASE */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    background-color: #f4f6f8;
+    color: #333;
+}
+
+/* HEADER E FOOTER */
+header, footer {
+    background-color: #004080;
+    color: #fff;
+    padding: 15px 20px;
+    text-align: center;
+}
+
+header { font-size: 1.8rem; font-weight: bold; }
+footer { font-size: 0.9rem; }
+
+/* CONTAINER PRINCIPALE */
+.container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* TITOLI */
+h1, h2, h3 { color: #004080; margin-bottom: 15px; }
+
+/* PULSANTI */
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #004080;
+    color: #fff;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    text-decoration: none;
+}
+.btn:hover { background-color: #0066cc; }
+
+/* FORM BASE */
+form input, form select, form textarea {
+    width: 100%;
+    padding: 8px 10px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+label { font-weight: bold; margin-bottom: 5px; display: block; }
+
+/* MESSAGGI */
+.error { color: #c00; font-weight: bold; margin-bottom: 10px; }
+.success { color: #008000; font-weight: bold; margin-bottom: 10px; }
+
+/* TABELLE GENERICHE */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
+th { background-color: #004080; color: #fff; }
+
+/* LINK */
+a { color: #004080; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* LISTE */
+.list-item { padding: 8px 10px; border-bottom: 1px solid #ddd; }
+
+/* LAYOUT FLESSIBILE */
+.flex { display: flex; flex-wrap: wrap; gap: 15px; }
+
+
+/* STILI SPECIFICI PER MACRO-FUNZIONALITÀ */
+
+
+/* 1. Gestione account */
+.account form { max-width: 500px; margin: 0 auto; }
+
+/* 2. Gestione utenti */
+.utenti table { border-radius: 4px; overflow: hidden; }
+.utenti th, .utenti td { text-align: center; }
+
+/* 3. Gestione sale prova */
+.sale table { border-collapse: collapse; width: 100%; }
+.sale th { background-color: #0066cc; }
+
+/* 4. Gestione prenotazioni */
+.prenotazioni .btn { margin-right: 10px; }
+.prenotazioni table th { text-align: center; }
+
+/* 5. Gestione inviti */
+.inviti .list-item { background-color: #f0f4f8; border-left: 4px solid #004080; }
+
+/* 6. Calendario e impegni */
+.calendario table { width: 100%; border: 1px solid #ccc; }
+.calendario th { background-color: #004080; color: #fff; }
+
+/* 7. Controlli e vincoli */
+.controlli .error { font-size: 1rem; }
+.controlli .success { font-size: 1rem; }
+
+/* 8. Statistiche e analisi */
+.statistiche table { text-align: center; }
+.statistiche th { background-color: #004080; color: #fff; }
+
+/* RESPONSIVE MOBILE */
+@media (max-width: 768px) {
+    .container {
+        margin: 10px;
+        padding: 15px;
+        border-radius: 0;
+    }
+    
+    header { 
+        font-size: 1.4rem; 
+        padding: 12px 15px; 
+    }
+    
+    table, .flex {
+        font-size: 14px;
+        overflow-x: auto;
+        display: block;
+    }
+    
+    th, td { 
+        padding: 8px 6px; 
+        min-width: 80px; 
+    }
+    
+    .btn { 
+        width: 100%; 
+        margin-bottom: 10px; 
+        padding: 12px; 
+    }
+    
+    form input, form select, form textarea {
+        font-size: 16px; /* Previene zoom iOS */
+    }
+    
+    h1 { font-size: 1.6rem; }
+    h2 { font-size: 1.3rem; }
+}
+
+@media (max-width: 480px) {
+    body { font-size: 15px; }
+    header { font-size: 1.2rem; }
+    .list-item { padding: 10px 8px; }
+}
+
+/* OVERRIDE ADMINKIT PER TABELLE PIENE */
+.card .table,
+.card th, 
+.card td {
+  border: 1px solid #ccc !important;
+  padding: 12px 15px !important;
+}
+.card th {
+  background-color: #004080 !important;
+  color: #fff !important;
+  font-weight: bold !important;
+}
+.card .table {
+  border-collapse: collapse !important;
+}
+.table-striped > tbody > tr:nth-of-type(odd) > td {
+  background-color: rgba(255,255,255,.75) !important;
+}
+
