@@ -1,0 +1,54 @@
+graph TD
+    A[Play Room Planner]
+
+    A --> B[Gestione accesso e account]
+    B --> B1[Registrazione utente]
+    B --> B2[Login / Logout]
+    B --> B3[Gestione sessione]
+    B --> B4[Visualizzazione profilo]
+    B --> B5[Modifica profilo]
+
+    A --> C[Gestione utenti]
+    C --> C1[Visualizzazione iscritti settore]
+    C --> C2[Filtraggio per ruolo]
+    C --> C3[Info responsabile di settore]
+
+    A --> D[Gestione sale prova]
+    D --> D1[Visualizzazione sale]
+    D --> D2[Dettagli sala]
+    D --> D3[Dotazioni sala]
+
+    A --> E[Gestione prenotazioni]
+    E --> E1[Creazione prenotazione]
+    E --> E2[Modifica prenotazione]
+    E --> E3[Cancellazione prenotazione]
+    E --> E4[Invito partecipanti]
+    E4 --> E41[Invito singoli]
+    E4 --> E42[Invito per categoria]
+
+    A --> F[Gestione inviti e partecipazione]
+    F --> F1[Visualizzazione inviti]
+    F --> F2[Accettazione invito]
+    F --> F3[Rifiuto invito]
+    F --> F4[Rimozione partecipazione]
+
+    A --> G[Calendario e impegni]
+    G --> G1[Impegni settimanali utente]
+    G --> G2[Prenotazioni settimanali sala]
+
+    A --> H[Controlli applicativi]
+    H --> H1[Controllo capienza]
+    H --> H2[Controllo sovrapposizioni]
+    H --> H3[Verifica disponibilità sala]
+    H --> H4[Verifica disponibilità utente]
+
+    A --> I[Statistiche e analisi]
+    I --> I1[Prenotazioni per giorno]
+    I --> I2[Prenotazioni per sala]
+    I --> I3[Prenotazioni organizzate]
+    I --> I4[Analisi avanzata partecipazione]
+
+    A --> J[Servizi API]
+    J --> J1[API utenti]
+    J --> J2[API prenotazioni]
+    J --> J3[API visualizzazione]
