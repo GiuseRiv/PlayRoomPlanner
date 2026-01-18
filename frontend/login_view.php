@@ -17,45 +17,34 @@
 <div class="container login-container">
     <div class="row justify-content-center">
         <div class="col-md-5 col-lg-4">
-            <a href="index.php?page=login" class="brand-logo">Play Room Planner</a>
-
+            <a href="#" class="brand-logo">Play Room Planner</a>
             <div id="loginFeedback"></div>
-
-            <?php if(isset($_GET['msg']) && $_GET['msg'] === 'reg_ok'): ?>
+            <?php if(isset($_GET['msg']) && $_GET['msg'] == 'reg_ok'): ?>
                 <div class="alert alert-success">Registrazione riuscita! Accedi ora.</div>
             <?php endif; ?>
-
             <div class="card p-4">
                 <div class="card-body">
                     <h5 class="card-title text-center mb-4">Accedi</h5>
-
                     <form id="loginForm">
                         <div class="mb-3">
                             <label class="form-label">Email</label>
                             <input type="email" id="email" name="email" class="form-control" required>
                         </div>
-
                         <div class="mb-3">
                             <label class="form-label">Password</label>
                             <input type="password" id="password" name="password" class="form-control" required>
                         </div>
-
                         <button type="submit" class="btn btn-primary w-100">Entra</button>
                     </form>
-
                     <hr>
-
                     <div class="text-center">
-                        <p class="small">Nuovo iscritto? <a href="index.php?page=registrazione">Registrati ora</a></p>
+                        <p class="small">Nuovo iscritto? <a href="frontend/registrazione.php">Registrati ora</a></p>
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
-
-<!-- JS è in cartella "JS/" maiuscola -->
-<script src="JS/auth.js"></script>
+<script src="js/auth.js"></script>
 </body>
 </html>

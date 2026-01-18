@@ -1,9 +1,7 @@
 <?php
-// common/config.php
 declare(strict_types=1);
 
-// Configurazione Sessioni (Cookies Sicuri)
-ini_set('session.cookie_httponly', '1'); 
+ini_set('session.cookie_httponly', '1');
 ini_set('session.use_only_cookies', '1');
 ini_set('session.cookie_samesite', 'Lax');
 
@@ -29,5 +27,5 @@ try {
     );
 } catch (PDOException $e) {
     http_response_code(500);
-    die("Errore di connessione al database");
+    die(json_encode(['status' => 'error', 'message' => 'Errore di connessione al database']));
 }
