@@ -1,23 +1,40 @@
 $(document).ready(function() {
-    $('#loginForm').on('submit', function(e) {
+    // Gestione Registrazione con Foto
+    $('#registerForm').on('submit', function(e) {
         e.preventDefault();
-        
-        const email = $('#email').val();
-        const password = $('#password').val();
+        let formData = new FormData(this); // FormData è necessario per inviare file
 
         $.ajax({
-            url: 'backend/login_process.php',
+            url: '../processes/register_process.php',
             type: 'POST',
-            data: { email: email, password: password },
-            dataType: 'json',
+            data: formData,
+            contentType: false,
+            processData: false,
             success: function(response) {
-                if (response.status === 'success') {
-                    window.location.href = 'frontend/dashboard.php';
+                if(response.status === 'success') {
+                    window.location.href = '../login_view.php?msg=reg_ok';
                 }
             },
             error: function(xhr) {
-                const msg = xhr.responseJSON ? xhr.responseJSON.message : "Errore durante l'accesso.";
-                $('#loginFeedback').html('<div class="alert alert-danger">' + msg + '</div>');
+                let res = JSON.parse(xhr.responseText);
+                $('#regFeedback').html(`<div class="alert alert-danger">${res.message}</div>`);
+            }
+        });
+    });
+
+    // Gestione Login
+    $('#loginForm').on('submit', function(e) {
+        e.preventDefault();
+        $.ajax({
+            url: 'processes/login_process.php',
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                window.location.href = 'dashboard.php'; // Cambia con la tua home post-login
+            },
+            error: function(xhr) {
+                let res = JSON.parse(xhr.responseText);
+                $('#loginFeedback').html(`<div class="alert alert-danger">${res.message}</div>`);
             }
         });
     });
