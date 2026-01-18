@@ -12,7 +12,9 @@
         <div class="col-md-6">
             <div class="card p-4 shadow border-0" style="border-radius: 1rem;">
                 <h3 class="text-center mb-4">Crea Account</h3>
+
                 <div id="regFeedback"></div>
+
                 <form id="registrationForm">
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -24,10 +26,12 @@
                             <input type="text" id="regCognome" name="cognome" class="form-control" required>
                         </div>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label">Email</label>
                         <input type="email" id="regEmail" name="email" class="form-control" required>
                     </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Ruolo</label>
@@ -42,15 +46,19 @@
                             <input type="date" id="regData" name="data_nascita" class="form-control" required>
                         </div>
                     </div>
+
                     <button type="submit" class="btn btn-success w-100 py-2">Registrati</button>
+
                     <div class="text-center mt-3">
-                        <a href="../index.php" class="text-decoration-none">Hai già un account? Accedi</a>
+                        <a href="index.php?page=login" class="text-decoration-none">Hai già un account? Accedi</a>
                     </div>
                 </form>
+
             </div>
         </div>
     </div>
 </div>
-<script src="../js/registration.js"></script>
+
+<script src="JS/registration.js"></script>
 </body>
 </html>
