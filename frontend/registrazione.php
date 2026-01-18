@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Play Room Planner - Registrazione</title>
+    <title>Registrazione - Play Room Planner</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
@@ -21,9 +21,12 @@
                             <label class="form-label">Nome</label>
                             <input type="text" id="regNome" name="nome" class="form-control" required>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Cognome</label>
-                            <input type="text" id="regCognome" name="cognome" class="form-control" required>
+                        <div class="mb-3"><label>Email</label><input type="email" name="email" class="form-control" required></div>
+                        <div class="mb-3"><label>Password</label><input type="password" name="password" class="form-control" required></div>
+                        <div class="mb-3"><label>Data Nascita</label><input type="date" name="data_nascita" class="form-control" required></div>
+                        <div class="mb-3">
+                            <label>Foto Profilo</label>
+                            <input type="file" name="foto" class="form-control" accept="image/*">
                         </div>
                     </div>
 
