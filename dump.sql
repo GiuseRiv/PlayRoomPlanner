@@ -87,11 +87,11 @@ FOREIGN KEY (id_prenotazione) REFERENCES Prenotazione(id_prenotazione)
 -- ======================================================
 -- POPOLAMENTO DATI DI ESEMPIO
 -- ======================================================
-INSERT INTO Iscritto (nome, cognome, data_nascita, ruolo, email) VALUES
-('Mario', 'Rossi', '1980-05-10', 'docente', 'mario@rossi.it'),
-('Luca', 'Verdi', '1995-12-20', 'allievo', 'luca@verdi.it'),
-('Anna', 'Neri', '1990-03-15', 'tecnico', 'anna@neri.it'),
-('Paola', 'Bianchi', '1992-07-22', 'allievo', 'paola@bianchi.it');
+INSERT INTO Iscritto (nome, cognome, data_nascita, ruolo, email, password) VALUES
+('Mario', 'Rossi', '1980-05-10', 'docente', 'mario@rossi.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
+('Luca', 'Verdi', '1995-12-20', 'allievo', 'luca@verdi.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
+('Anna', 'Neri', '1990-03-15', 'tecnico', 'anna@neri.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
+('Paola', 'Bianchi', '1992-07-22', 'allievo', 'paola@bianchi.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
 
 INSERT INTO Settore (nome, tipo, id_responsabile, anni_servizio, data_nomina) VALUES
 ('Musica Moderna', 'musica', 1, 5, '2019-01-01'),
@@ -110,4 +110,4 @@ INSERT INTO Prenotazione (data, ora_inizio, durata_ore, attivita, id_sala, id_or
 ('2025-02-01', 10, 2, 'Prove Band', 1, 1);
 
 INSERT INTO invito (id_iscritto, id_prenotazione, stato) VALUES
-(2, 1, 'accettato'), (4, 1, 'accettato');)
+(2, 1, 'accettato'), (4, 1, 'accettato');
