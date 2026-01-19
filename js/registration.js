@@ -1,26 +1,38 @@
 $(document).ready(function() {
     $('#registrationForm').on('submit', function(e) {
         e.preventDefault();
-        
-        // Svuota feedback precedente
         $('#regFeedback').empty();
 
-        // Controlli Password
         const p1 = $('#regPassword').val();
         const p2 = $('#regPasswordConfirm').val();
+        
+        const upperRegex = /[A-Z]/;
+        const specialRegex = /[!@#$%^&*(),.?":{}|<>]/;
 
         if (p1 !== p2) {
-            $('#regFeedback').html('<div class="alert alert-danger">Le password non coincidono!</div>');
+            showError("Le password non coincidono.");
             return;
         }
 
         if (p1.length < 8) {
-            $('#regFeedback').html('<div class="alert alert-danger">La password deve essere di almeno 8 caratteri.</div>');
+            showError("La password deve essere di almeno 8 caratteri.");
             return;
         }
 
-        // Procedi con AJAX...
+        if (!upperRegex.test(p1)) {
+            showError("La password deve contenere almeno una lettera maiuscola.");
+            return;
+        }
+
+        if (!specialRegex.test(p1)) {
+            showError("La password deve contenere almeno un carattere speciale.");
+            return;
+        }
+
         let formData = new FormData(this);
+        const $btn = $('#btnRegister');
+        $btn.prop('disabled', true).text('Registrazione in corso...');
+
         $.ajax({
             url: 'backend/register_process.php',
             type: 'POST',
@@ -29,15 +41,23 @@ $(document).ready(function() {
             processData: false,
             success: function(response) {
                 if(response.status === 'success') {
-                    window.location.href = 'index.php?page=login&msg=reg_ok';
-                } else {
-                    $('#regFeedback').html(`<div class="alert alert-danger">${response.message}</div>`);
+                    window.location.href = '/PlayRoomPlanner/index.php?page=login&msg=reg_ok';
                 }
             },
             error: function(xhr) {
-                let res = JSON.parse(xhr.responseText);
-                $('#regFeedback').html(`<div class="alert alert-danger">${res.message}</div>`);
+                $btn.prop('disabled', false).text('Registrati');
+                let msg = "Errore nel server";
+                try {
+                    let res = JSON.parse(xhr.responseText);
+                    msg = res.message;
+                } catch(e){}
+                showError(msg);
             }
         });
     });
+
+    function showError(text) {
+        $('#regFeedback').html(`<div class="alert alert-danger">${text}</div>`);
+        window.scrollTo(0, 0);
+    }
 });

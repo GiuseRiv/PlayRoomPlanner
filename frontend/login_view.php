@@ -4,47 +4,67 @@
     <meta charset="UTF-8">
     <title>Play Room Planner - Login</title>
     <link rel="stylesheet" href="CSS/app.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
         .login-container { margin-top: 10%; }
-        .card { border: none; border-radius: 1rem; box-shadow: 0 0.5rem 1rem 0 rgba(0, 0, 0, 0.1); }
-        .brand-logo { color: #0d6efd; font-weight: 700; font-size: 1.5rem; text-align: center; display: block; text-decoration: none; margin-bottom: 1.5rem; }
+        .password-wrapper { position: relative; }
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 38px;
+            cursor: pointer;
+            color: #6c757d;
+            font-size: 1.2rem;
+        }
+        .toggle-password:hover { color: #0d6efd; }
     </style>
 </head>
-<body>
+<body class="bg-light">
 <div class="container login-container">
     <div class="row justify-content-center">
         <div class="col-md-5 col-lg-4">
-            <a href="#" class="brand-logo">Play Room Planner</a>
+            <h2 class="text-center mb-4">Play Room Planner</h2>
             <div id="loginFeedback"></div>
             <?php if(isset($_GET['msg']) && $_GET['msg'] == 'reg_ok'): ?>
                 <div class="alert alert-success">Registrazione riuscita! Accedi ora.</div>
             <?php endif; ?>
-            <div class="card p-4">
+            <div class="card p-4 shadow-sm border-0">
                 <div class="card-body">
-                    <h5 class="card-title text-center mb-4">Accedi</h5>
                     <form id="loginForm">
                         <div class="mb-3">
                             <label class="form-label">Email</label>
-                            <input type="email" id="email" name="email" class="form-control" required>
+                            <input type="email" name="email" class="form-control" required>
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-3 password-wrapper">
                             <label class="form-label">Password</label>
-                            <input type="password" id="password" name="password" class="form-control" required>
+                            <input type="password" id="loginPass" name="password" class="form-control" required>
+                            <i class="bi bi-eye toggle-password" onclick="toggleLoginPass(this)"></i>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Entra</button>
                     </form>
-                    <hr>
-                    <div class="text-center">
-                        <p class="small">Nuovo iscritto? <a href="frontend/registrazione.php">Registrati ora</a></p>
+                    <div class="text-center mt-3">
+                        <p class="small">Nuovo? <a href="/PlayRoomPlanner/index.php?page=registrazione">Registrati</a></p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+<script>
+    function toggleLoginPass(icon) {
+        const x = document.getElementById("loginPass");
+        if (x.type === "password") {
+            x.type = "text";
+            icon.classList.replace("bi-eye", "bi-eye-slash");
+        } else {
+            x.type = "text" === "password" ? "text" : "password"; // Fixed logic
+            x.type = "password";
+            icon.classList.replace("bi-eye-slash", "bi-eye");
+        }
+    }
+</script>
 <script src="js/auth.js"></script>
 </body>
 </html>
