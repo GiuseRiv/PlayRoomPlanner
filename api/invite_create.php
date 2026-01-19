@@ -60,17 +60,27 @@ try {
 
   // 3) Costruisci lista candidati in base alla modalità
   if ($mode === 'all') {
-    $sqlCand = "SELECT id_iscritto FROM Iscritto";
-    $paramsCand = [];
-  } elseif ($mode === 'sector') {
-    if ($idSettore <= 0) err('id_settore mancante', 422);
-    $sqlCand = "SELECT id_iscritto FROM afferisce WHERE id_settore = ?";
-    $paramsCand = [$idSettore];
-  } else { // role
-    if ($ruolo === '') err('ruolo mancante', 422);
-    $sqlCand = "SELECT id_iscritto FROM Iscritto WHERE ruolo = ?";
-    $paramsCand = [$ruolo];
-  }
+  // escludo tecnici
+  $sqlCand = "SELECT id_iscritto FROM Iscritto WHERE ruolo <> 'tecnico'";
+  $paramsCand = [];
+} elseif ($mode === 'sector') {
+  if ($idSettore <= 0) err('id_settore mancante', 422);
+  // prendo iscritti del settore, ma escludo tecnici
+  $sqlCand = "
+    SELECT a.id_iscritto
+    FROM afferisce a
+    JOIN Iscritto u ON u.id_iscritto = a.id_iscritto
+    WHERE a.id_settore = ?
+      AND u.ruolo <> 'tecnico'
+  ";
+  $paramsCand = [$idSettore];
+} else { // role
+  if ($ruolo === '') err('ruolo mancante', 422);
+  if ($ruolo === 'tecnico') err('Non è possibile invitare tecnici', 422);
+  $sqlCand = "SELECT id_iscritto FROM Iscritto WHERE ruolo = ?";
+  $paramsCand = [$ruolo];
+}
+
 
   if (!$includeOrganizer) {
     // escludi organizzatore

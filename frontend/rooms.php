@@ -64,21 +64,21 @@ require_once __DIR__ . '/../common/config.php'; // sessione + $pdo
 </div>
 
 <!-- Solo tabella prenotazioni -->
-<div class="table-responsive">
-  <table class="table table-sm align-middle mb-0">
-    <thead>
-      <tr>
-        <th>Quando</th>
-        <th>Attività</th>
-        <th>Organizzatore</th>
-        <th class="text-end">Durata</th>
-      </tr>
-    </thead>
-    <tbody id="bookingsTbody">
-      <tr><td colspan="4" class="text-muted">Seleziona una sala e una settimana.</td></tr>
-    </tbody>
-  </table>
-</div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Quando</th>
+                <th>Attività</th>
+                <th>Organizzatore</th>
+                <th class="text-end">Durata</th>
+              </tr>
+            </thead>
+            <tbody id="bookingsTbody">
+              <tr><td colspan="4" class="text-muted">Seleziona una sala e una settimana.</td></tr>
+            </tbody>
+          </table>
+        </div>
 
 
       </div>

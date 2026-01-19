@@ -1,11 +1,14 @@
-<?php declare(strict_types=1); ?>
+<?php
+declare(strict_types=1);
+require_once __DIR__ . '/../common/config.php'; // sessione
+?>
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Nuova prenotazione</title>
-  <link rel="stylesheet" href="CSS/app.css">
+  <link rel="stylesheet" href="css/app.css">
 </head>
 
 <body class="bg-light">
@@ -17,29 +20,35 @@
 
     <div class="card shadow-sm border-0 mt-3">
       <div class="card-body">
-        <form id="bookingForm" class="row g-2">
+        <form id="bookingForm" class="row g-2" autocomplete="off">
 
           <div class="col-12">
             <label class="form-label">Sala</label>
             <select class="form-select" name="id_sala" id="roomSelect" required>
               <option value="">Caricamento sale...</option>
             </select>
-            <div class="form-text">Scegli la sala da prenotare.</div>
+            <div class="form-text">Mostra solo le sale prenotabili dal tuo account.</div>
           </div>
 
           <div class="col-12 col-md-4">
             <label class="form-label">Data</label>
-            <input type="date" class="form-control" name="data" required>
+            <input type="date" class="form-control" name="data" id="dateInput" required>
+            <div class="form-text">Non è possibile prenotare nel passato.</div>
           </div>
 
           <div class="col-12 col-md-4">
             <label class="form-label">Ora inizio (9-23)</label>
-            <input type="number" class="form-control" name="ora_inizio" min="9" max="23" required>
+            <select class="form-select" name="ora_inizio" id="startSelect" required>
+              <option value="">Seleziona...</option>
+            </select>
           </div>
 
           <div class="col-12 col-md-4">
             <label class="form-label">Durata (ore)</label>
-            <input type="number" class="form-control" name="durata_ore" min="1" max="14" required>
+            <select class="form-select" name="durata_ore" id="durSelect" required>
+              <option value="">Seleziona...</option>
+            </select>
+            <div class="form-text">La prenotazione deve terminare entro le 23.</div>
           </div>
 
           <div class="col-12">
@@ -84,6 +93,6 @@
     </div>
   </div>
 
-  <script src="JS/booking_new.js"></script>
+  <script src="js/booking_new.js"></script>
 </body>
 </html>

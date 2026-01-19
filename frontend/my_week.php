@@ -28,7 +28,6 @@ $sunday = date('Y-m-d', $sundayTs);
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
   <style>
-    /* Micro-fix locale: evita “sbordo” e rende l’header del form più compatto */
     .week-form .form-label { margin-bottom: .25rem; }
   </style>
 </head>
@@ -92,10 +91,11 @@ $sunday = date('Y-m-d', $sundayTs);
                 <th>Attività</th>
                 <th>Organizzatore</th>
                 <th>Stato invito</th>
+                <th class="text-end">Azioni</th>
               </tr>
             </thead>
             <tbody id="weekTbody">
-              <tr><td colspan="7" class="text-muted">Caricamento...</td></tr>
+              <tr><td colspan="8" class="text-muted">Caricamento...</td></tr>
             </tbody>
           </table>
         </div>
@@ -103,6 +103,9 @@ $sunday = date('Y-m-d', $sundayTs);
       </div>
     </div>
   </div>
+
+  <!-- Bootstrap JS (bundle) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script src="JS/my_week.js"></script>
 </body>
