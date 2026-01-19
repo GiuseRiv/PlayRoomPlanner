@@ -5,7 +5,11 @@ $day = $_GET['day'] ?? date('Y-m-d');
 
 // calcolo lun-dom ISO: lunedì = 1, domenica = 7
 $ts = strtotime($day);
-$dow = (int)date('N', $ts); // 1..7 [web:187]
+if ($ts === false) {
+  $day = date('Y-m-d');
+  $ts = strtotime($day);
+}
+$dow = (int)date('N', $ts);
 
 $mondayTs = strtotime("-" . ($dow - 1) . " day", $ts);
 $sundayTs = strtotime("+" . (7 - $dow) . " day", $ts);
@@ -21,8 +25,12 @@ $sunday = date('Y-m-d', $sundayTs);
   <title>I miei impegni (settimana)</title>
 
   <link rel="stylesheet" href="CSS/app.css">
-  <link rel="stylesheet" href="CSS/style.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    /* Micro-fix locale: evita “sbordo” e rende l’header del form più compatto */
+    .week-form .form-label { margin-bottom: .25rem; }
+  </style>
 </head>
 
 <body class="bg-light">
@@ -32,7 +40,8 @@ $sunday = date('Y-m-d', $sundayTs);
         <a href="index.php?page=dashboard" class="btn btn-link p-0">&larr; Dashboard</a>
         <h1 class="h4 mt-2 mb-0">I miei impegni (settimana)</h1>
         <div class="text-muted small">
-          Settimana selezionata: <strong id="weekRange"><?php echo htmlspecialchars($monday) . " → " . htmlspecialchars($sunday); ?></strong>
+          Settimana selezionata:
+          <strong id="weekRange"><?php echo htmlspecialchars($monday) . " → " . htmlspecialchars($sunday); ?></strong>
         </div>
       </div>
       <button id="btnRefresh" class="btn btn-outline-primary">Aggiorna</button>
@@ -40,14 +49,31 @@ $sunday = date('Y-m-d', $sundayTs);
 
     <div class="card shadow-sm border-0 mt-3">
       <div class="card-body">
-        <form id="weekForm" class="row g-2 align-items-end">
+
+        <form id="weekForm" class="row g-2 align-items-end week-form">
           <div class="col-12 col-md-4">
             <label class="form-label">Scegli un giorno</label>
             <input type="date" class="form-control" name="day" id="dayInput"
                    value="<?php echo htmlspecialchars($day); ?>" required>
           </div>
+
+          <div class="col-12 col-md-2 d-flex">
+            <button type="submit" class="btn btn-primary w-100 align-self-end">Vai a settimana</button>
+          </div>
+
           <div class="col-12 col-md-3">
-            <button type="submit" class="btn btn-primary w-100">Vai a settimana</button>
+            <label class="form-label">Stato</label>
+            <select id="statusFilter" class="form-select">
+              <option value="">Tutti</option>
+              <option value="accettato">Accettati</option>
+              <option value="pendente">Pendenti</option>
+              <option value="rifiutato">Rifiutati</option>
+            </select>
+          </div>
+
+          <div class="col-12 col-md-3">
+            <label class="form-label">Cerca</label>
+            <input id="textFilter" class="form-control" placeholder="Sala / attività / organizzatore">
           </div>
         </form>
 
@@ -74,9 +100,6 @@ $sunday = date('Y-m-d', $sundayTs);
           </table>
         </div>
 
-        <div class="small text-muted mt-3">
-          Nota: questa pagina è pronta per consumare l’endpoint JSON <code>api/user_week.php</code>.
-        </div>
       </div>
     </div>
   </div>

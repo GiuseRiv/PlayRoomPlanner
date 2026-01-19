@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Profilo</title>
   <link rel="stylesheet" href="CSS/app.css">
-  <link rel="stylesheet" href="CSS/style.css">
 </head>
 <body class="bg-light">
   <div class="container py-4">

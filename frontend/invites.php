@@ -10,10 +10,9 @@ declare(strict_types=1);
   <title>Inviti - Play Room Planner</title>
 
   <link rel="stylesheet" href="CSS/app.css">
-  <link rel="stylesheet" href="CSS/style.css">
 
   <!-- Bootstrap (se già incluso globalmente puoi rimuoverlo) -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+ <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"> -->
 </head>
 
 <body class="bg-light">

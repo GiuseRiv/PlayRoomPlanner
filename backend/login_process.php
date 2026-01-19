@@ -1,41 +1,40 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../common/config.php'; // avvia sessione + $pdo
+require_once __DIR__ . '/../common/config.php';
 header('Content-Type: application/json; charset=utf-8');
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['status' => 'error', 'message' => 'Metodo non supportato']);
-    exit;
+function out(int $code, array $payload): void {
+  http_response_code($code);
+  echo json_encode($payload);
+  exit;
 }
 
-$email = trim($_POST['email'] ?? '');
-$password = $_POST['password'] ?? null; // se lo userete in futuro
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+  out(405, ['status' => 'error', 'message' => 'Metodo non supportato']);
+}
 
-if ($email === '') {
-    http_response_code(422);
-    echo json_encode(['status' => 'error', 'message' => 'Email obbligatoria']);
-    exit;
+$email = trim((string)($_POST['email'] ?? ''));
+$password = (string)($_POST['password'] ?? '');
+
+if ($email === '' || $password === '') {
+  out(422, ['status' => 'error', 'message' => 'Email e password obbligatorie']);
 }
 
 try {
-    $stmt = $pdo->prepare("SELECT id_iscritto, nome, ruolo, email FROM Iscritto WHERE email = :email");
-    $stmt->execute(['email' => $email]);
-    $user = $stmt->fetch();
+  $stmt = $pdo->prepare("SELECT id_iscritto, nome, ruolo, email, password FROM Iscritto WHERE email = :email");
+  $stmt->execute(['email' => $email]);
+  $user = $stmt->fetch();
 
-    // Nota: per ora fate login solo per email; se aggiungete password, verificate qui.
-    if ($user) {
-        $_SESSION['user_id'] = (int)$user['id_iscritto'];
-        $_SESSION['user_nome'] = $user['nome'];
-        $_SESSION['user_ruolo'] = $user['ruolo'];
+  if (!$user || !password_verify($password, $user['password'])) {
+    out(401, ['status' => 'error', 'message' => 'Credenziali errate']);
+  }
 
-        echo json_encode(['status' => 'success', 'message' => 'Login effettuato con successo']);
-    } else {
-        http_response_code(401);
-        echo json_encode(['status' => 'error', 'message' => 'Email non trovata o credenziali errate']);
-    }
+  $_SESSION['user_id'] = (int)$user['id_iscritto'];
+  $_SESSION['user_nome'] = (string)$user['nome'];
+  $_SESSION['user_ruolo'] = (string)$user['ruolo'];
+
+  out(200, ['status' => 'success', 'message' => 'Login effettuato con successo']);
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['status' => 'error', 'message' => 'Errore server']);
+  out(500, ['status' => 'error', 'message' => 'Errore server']);
 }

@@ -1,26 +1,31 @@
 <?php
 declare(strict_types=1);
 
-session_start();
-header('Content-Type: application/json');
+ob_start();
+ini_set('display_errors', '0');
 
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['ok' => false, 'message' => 'Non autenticato']);
-    exit;
-}
+session_start();
+header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../common/config.php';
+require_once __DIR__ . '/../common/api_auth.php';
+
+if (!isset($_SESSION['user_id'])) {
+  http_response_code(401);
+  ob_clean();
+  echo json_encode(['ok' => false, 'message' => 'Non autenticato']);
+  exit;
+}
 
 $day = $_GET['day'] ?? date('Y-m-d');
 $ts = strtotime($day);
 if ($ts === false) {
-    http_response_code(400);
-    echo json_encode(['ok' => false, 'message' => 'Parametro day non valido']);
-    exit;
+  http_response_code(400);
+  ob_clean();
+  echo json_encode(['ok' => false, 'message' => 'Parametro day non valido']);
+  exit;
 }
 
-// calcolo lun-dom (ISO): lun=1..dom=7
 $dow = (int)date('N', $ts);
 $mondayTs = strtotime('-' . ($dow - 1) . ' day', $ts);
 $sundayTs = strtotime('+' . (7 - $dow) . ' day', $ts);
@@ -30,10 +35,6 @@ $sunday = date('Y-m-d', $sundayTs);
 
 $userId = (int)$_SESSION['user_id'];
 
-/**
- * Ritorna inviti della settimana per stato (accettato/pendente/rifiutato).
- * Nota: Prenotazione.data è DATE.
- */
 $sql = "
 SELECT
   p.id_prenotazione,
@@ -41,7 +42,6 @@ SELECT
   p.ora_inizio,
   p.durata_ore,
   p.attivita,
-  p.id_sala,
   s.nome AS nome_sala,
   i.stato AS stato_invito,
   CONCAT(org.nome, ' ', org.cognome) AS organizzatore
@@ -56,42 +56,36 @@ ORDER BY p.data ASC, p.ora_inizio ASC
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute([
-    'uid' => $userId,
-    'monday' => $monday,
-    'sunday' => $sunday
+  'uid' => $userId,
+  'monday' => $monday,
+  'sunday' => $sunday
 ]);
 
 $rows = $stmt->fetchAll();
 
-$events = [];
+$out = [];
 $rejected = [];
 
 foreach ($rows as $r) {
-    $item = [
-        'id_prenotazione' => (int)$r['id_prenotazione'],
-        'data' => $r['data'],
-        'ora_inizio' => (int)$r['ora_inizio'],
-        'durata_ore' => (int)$r['durata_ore'],
-        'attivita' => $r['attivita'],
-        'id_sala' => (int)$r['id_sala'],
-        'nome_sala' => $r['nome_sala'],
-        'stato_invito' => $r['stato_invito'],
-        'organizzatore' => $r['organizzatore'],
-    ];
+  $row = [
+    'data' => $r['data'],
+    'ora' => (string)((int)$r['ora_inizio']) . ':00',
+    'durata' => (string)((int)$r['durata_ore']) . 'h',
+    'sala' => $r['nome_sala'],
+    'attivita' => $r['attivita'],
+    'organizzatore' => $r['organizzatore'],
+    'stato_invito' => $r['stato_invito'],
+  ];
 
-    if ($r['stato_invito'] === 'rifiutato') {
-        $rejected[] = $item;
-    } else {
-        $events[] = $item;
-    }
+  if ($r['stato_invito'] === 'rifiutato') $rejected[] = $row;
+  else $out[] = $row;
 }
 
+ob_clean();
 echo json_encode([
-    'ok' => true,
-    'data' => [
-        'monday' => $monday,
-        'sunday' => $sunday,
-        'events' => $events,
-        'rejected' => $rejected
-    ]
+  'ok' => true,
+  'data' => $out,
+  'week' => ['monday' => $monday, 'sunday' => $sunday],
+  'rejected' => $rejected
 ]);
+exit;

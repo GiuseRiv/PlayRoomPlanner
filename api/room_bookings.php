@@ -1,16 +1,36 @@
 <?php
-// Header + config
-require_once '../common/config.php';
-$pdo = $GLOBALS['pdo'];
+declare(strict_types=1);
 
-$roomId = $_GET['roomId'] ?? null;
+require_once __DIR__ . '/../common/config.php';
+require_once __DIR__ . '/../common/api_auth.php';
+
+header('Content-Type: application/json; charset=utf-8');
+
+function ok($data=null, int $code=200): void { http_response_code($code); echo json_encode(['ok'=>true,'data'=>$data]); exit; }
+function err(string $m, int $code=400): void { http_response_code($code); echo json_encode(['ok'=>false,'message'=>$m]); exit; }
+
+$roomId = isset($_GET['roomId']) ? (int)$_GET['roomId'] : 0;
 $day = $_GET['day'] ?? date('Y-m-d');
+$ts = strtotime($day);
+if ($roomId <= 0) err('roomId mancante', 422);
+if ($ts === false) err('day non valido', 422);
 
-// Settimana lun-dom
-$start = (new DateTime($day))->modify('monday this week')->format('Y-m-d 00:00:00');
-$end = (new DateTime($day))->modify('sunday this week')->format('Y-m-d 23:59:59');
+// lun-dom ISO
+$dow = (int)date('N', $ts);
+$monday = date('Y-m-d', strtotime('-'.($dow-1).' day', $ts));
+$sunday = date('Y-m-d', strtotime('+'.(7-$dow).' day', $ts));
 
-$stmt = $pdo->prepare("SELECT * FROM prenotazioni WHERE sala_id=? AND inizio BETWEEN ? AND ? ORDER BY inizio");
-$stmt->execute([$roomId, $start, $end]);
-echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
-?>
+$stmt = $pdo->prepare("
+  SELECT
+    p.id_prenotazione, p.data, p.ora_inizio, p.durata_ore, p.attivita, p.stato,
+    CONCAT(org.nome,' ',org.cognome) AS organizzatore
+  FROM Prenotazione p
+  JOIN Iscritto org ON org.id_iscritto = p.id_organizzatore
+  WHERE p.id_sala = :rid
+    AND p.data BETWEEN :monday AND :sunday
+    AND p.stato = 'confermata'
+  ORDER BY p.data ASC, p.ora_inizio ASC
+");
+$stmt->execute(['rid'=>$roomId, 'monday'=>$monday, 'sunday'=>$sunday]);
+
+ok(['monday'=>$monday, 'sunday'=>$sunday, 'rows'=>$stmt->fetchAll()]);
