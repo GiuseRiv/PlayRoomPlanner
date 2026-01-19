@@ -9,7 +9,8 @@ require_once __DIR__ . '/../common/api_auth.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-if (!isset($_SESSION['user_id'])) {
+$userId = (int)($_SESSION['user_id'] ?? 0);
+if ($userId <= 0) {
   http_response_code(401);
   ob_clean();
   echo json_encode(['ok' => false, 'message' => 'Non autenticato'], JSON_UNESCAPED_UNICODE);
@@ -29,11 +30,8 @@ if ($ts === false) {
 $dow = (int)date('N', $ts);
 $mondayTs = strtotime('-' . ($dow - 1) . ' day', $ts);
 $sundayTs = strtotime('+' . (7 - $dow) . ' day', $ts);
-
 $monday = date('Y-m-d', $mondayTs);
 $sunday = date('Y-m-d', $sundayTs);
-
-$userId = (int)$_SESSION['user_id'];
 
 $sql = "
 SELECT
@@ -47,7 +45,6 @@ SELECT
   x.organizzatore,
   x.stato_invito
 FROM (
-  -- A) Sono invitato
   SELECT
     p.id_prenotazione,
     p.id_organizzatore,
@@ -68,7 +65,6 @@ FROM (
 
   UNION
 
-  -- B) Sono organizzatore (anche se non ho invito)
   SELECT
     p.id_prenotazione,
     p.id_organizzatore,
@@ -115,12 +111,12 @@ foreach ($rows as $r) {
     'id_prenotazione' => (int)$r['id_prenotazione'],
     'data' => $r['data'],
     'ora' => str_pad((string)((int)$r['ora_inizio']), 2, '0', STR_PAD_LEFT) . ':00',
-    'durata' => (string)((int)$r['durata_ore']) . 'h',
+    'durata' => ((int)$r['durata_ore']) . 'h',
     'sala' => $r['nome_sala'],
     'attivita' => $r['attivita'] ?? '',
     'organizzatore' => $r['organizzatore'],
     'stato_invito' => $r['stato_invito'],
-    'can_cancel' => $isOrganizer
+    'can_cancel' => $isOrganizer,
   ];
 
   if ($r['stato_invito'] === 'rifiutato') $rejected[] = $row;

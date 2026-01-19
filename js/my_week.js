@@ -40,13 +40,13 @@ function renderRows(rows) {
   }
 
   tb.innerHTML = rows.map(r => {
-    const canCancel = !!r.can_cancel;
     const id = r.id_prenotazione;
+    const canCancel = !!r.can_cancel;
 
-    const btnCancel = (canCancel && id)
+    const actionsHtml = (canCancel && id)
       ? `<button type="button" class="btn btn-sm btn-outline-danger"
                  data-action="cancel" data-id="${id}">Annulla</button>`
-      : '';
+      : `<span class="text-muted">—</span>`;
 
     return `
       <tr>
@@ -57,7 +57,7 @@ function renderRows(rows) {
         <td>${r.attivita ?? ''}</td>
         <td>${r.organizzatore ?? ''}</td>
         <td>${badgeHtml(r.stato_invito)}</td>
-        <td class="text-end">${btnCancel}</td>
+        <td class="text-end">${actionsHtml}</td>
       </tr>
     `;
   }).join('');
@@ -91,7 +91,7 @@ async function loadWeek(day) {
     try {
       payload = JSON.parse(txt);
     } catch (e) {
-      showAlert(`Risposta non JSON (HTTP ${res.status}). Contenuto: ${txt.slice(0, 120)}...`);
+      showAlert(`Risposta non JSON (HTTP ${res.status}). Contenuto: ${txt.slice(0, 200)}...`);
       renderRows([]);
       return;
     }
@@ -155,7 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!confirm('Vuoi annullare questa prenotazione?')) return;
 
     btn.disabled = true;
-
     try {
       await cancelBooking(id);
       showAlert('Prenotazione annullata.', 'success');

@@ -13,7 +13,7 @@ require_once __DIR__ . '/../common/config.php'; // sessione
 
 <body class="bg-light">
   <div class="container py-4">
-    <a href="index.php?page=dashboard" class="btn btn-link p-0">&larr; Dashboard</a>
+    <a href="index.php?page=dashboard" class="btn btn-outline-secondary btn-sm">&larr; Dashboard</a>
     <h1 class="h4 mt-3">Nuova prenotazione</h1>
 
     <div id="alertBox" class="mt-3"></div>

@@ -9,7 +9,7 @@
 </head>
 <body class="bg-light">
   <div class="container py-4">
-    <a href="index.php?page=dashboard" class="btn btn-link p-0">&larr; Dashboard</a>
+    <a href="index.php?page=dashboard" class="btn btn-outline-secondary btn-sm">&larr; Dashboard</a>
     <h1 class="h4 mt-3">Report</h1>
 
     <div class="card shadow-sm border-0 mt-3">

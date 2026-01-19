@@ -20,7 +20,7 @@ declare(strict_types=1);
 
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
       <div>
-        <a href="index.php?page=dashboard" class="btn btn-link p-0">&larr; Dashboard</a>
+        <a href="index.php?page=dashboard" class="btn btn-outline-secondary btn-sm">&larr; Dashboard</a>
         <h1 class="h4 mt-2 mb-0">Inviti</h1>
         <div class="text-muted small">
           Qui trovi le prenotazioni a cui sei stato invitato, puoi accettare o rifiutare con motivazione.

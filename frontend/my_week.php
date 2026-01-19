@@ -36,7 +36,7 @@ $sunday = date('Y-m-d', $sundayTs);
   <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
       <div>
-        <a href="index.php?page=dashboard" class="btn btn-link p-0">&larr; Dashboard</a>
+        <a href="index.php?page=dashboard" class="btn btn-outline-secondary btn-sm">&larr; Dashboard</a>
         <h1 class="h4 mt-2 mb-0">I miei impegni (settimana)</h1>
         <div class="text-muted small">
           Settimana selezionata:
