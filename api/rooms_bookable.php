@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
+header('Content-Type: application/json; charset=utf-8');
+
 require_once __DIR__ . '/../common/config.php';
 require_once __DIR__ . '/../common/api_auth.php';
-
-header('Content-Type: application/json; charset=utf-8');
 
 function ok($data=null, int $code=200): void {
   http_response_code($code);
@@ -17,41 +17,54 @@ function err(string $m, int $code=400): void {
   exit;
 }
 
-$uid = (int)$_SESSION['user_id'];
+$uid = (int)($_SESSION['user_id'] ?? 0);
+if ($uid <= 0) err('Non autenticato', 401);
+
 $ruolo = (string)($_SESSION['user_ruolo'] ?? '');
 
-if ($ruolo === 'tecnico') {
-  $st = $pdo->query("
-    SELECT s.id_sala,
-           s.nome AS nome_sala,
-           s.capienza,
-           se.id_settore,
-           se.nome AS nome_settore,
-           se.tipo
+try {
+  if ($ruolo === 'tecnico') {
+    // tecnico: tutte le sale
+    $st = $pdo->query("
+      SELECT
+        s.id_sala,
+        s.nome AS nome_sala,
+        s.capienza,
+        se.id_settore,
+        se.nome AS nome_settore,
+        se.tipo AS tipo_settore
+      FROM Sala s
+      JOIN Settore se ON se.id_settore = s.id_settore
+      ORDER BY se.nome ASC, s.nome ASC
+    ");
+    ok(['rooms' => $st->fetchAll()]);
+  }
+
+  // non tecnico: solo sale prenotabili (responsabile settore sala OR stesso tipo settore)
+  $sql = "
+    SELECT DISTINCT
+      s.id_sala,
+      s.nome AS nome_sala,
+      s.capienza,
+      seSala.id_settore,
+      seSala.nome AS nome_settore,
+      seSala.tipo AS tipo_settore
     FROM Sala s
-    JOIN Settore se ON se.id_settore = s.id_settore
-    ORDER BY se.nome, s.nome
-  ");
+    JOIN Settore seSala ON seSala.id_settore = s.id_settore
+    WHERE
+      seSala.id_responsabile = :uid
+      OR seSala.tipo IN (
+        SELECT seMio.tipo
+        FROM Settore seMio
+        WHERE seMio.id_responsabile = :uid2
+      )
+    ORDER BY seSala.nome ASC, s.nome ASC
+  ";
+
+  $st = $pdo->prepare($sql);
+  $st->execute(['uid' => $uid, 'uid2' => $uid]);
   ok(['rooms' => $st->fetchAll()]);
+
+} catch (Throwable $e) {
+  err('Errore server: ' . $e->getMessage(), 500);
 }
-
-$st = $pdo->prepare("
-  SELECT s.id_sala,
-         s.nome AS nome_sala,
-         s.capienza,
-         se.id_settore,
-         se.nome AS nome_settore,
-         se.tipo
-  FROM Sala s
-  JOIN Settore se ON se.id_settore = s.id_settore
-  WHERE se.id_responsabile = :uid
-     OR se.tipo IN (
-       SELECT se2.tipo
-       FROM Settore se2
-       WHERE se2.id_responsabile = :uid2
-     )
-  ORDER BY se.nome, s.nome
-");
-$st->execute(['uid' => $uid, 'uid2' => $uid]);
-
-ok(['rooms' => $st->fetchAll()]);

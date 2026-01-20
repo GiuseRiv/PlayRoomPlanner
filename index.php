@@ -24,7 +24,14 @@ $routes = [
     'my_week'       => __DIR__ . '/frontend/my_week.php',
     'rooms'         => __DIR__ . '/frontend/rooms.php',
     'booking_new'   => __DIR__ . '/frontend/booking_new.php',
-    'reports'       => __DIR__ . '/frontend/reports.php',
+    'reports'       => __DIR__ . '/frontend/reports_view.php',
+    'users_manage'  => __DIR__ . '/frontend/users_manage.php',
+    'users_edit'    => __DIR__ . '/frontend/users_edit.php',
+    // NUOVO: dettagli prenotazione
+    'booking_view'  => __DIR__ . '/frontend/booking_view.php',
+
+    // (opzionale) futuro: gestione iscritti tecnico
+    // 'users_manage'  => __DIR__ . '/frontend/users_manage.php',
 ];
 
 if (!isset($routes[$page])) {

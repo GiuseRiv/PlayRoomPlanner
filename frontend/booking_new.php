@@ -8,12 +8,12 @@ require_once __DIR__ . '/../common/config.php'; // sessione
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Nuova prenotazione</title>
-  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="CSS/app.css">
 </head>
 
 <body class="bg-light">
   <div class="container py-4">
-    <a href="index.php?page=dashboard" class="btn btn-outline-secondary btn-sm">&larr; Dashboard</a>
+    <a href="index.php?page=dashboard" class="btn btn-outline-secondary">&larr; Torna alla Dashboard</a>
     <h1 class="h4 mt-3">Nuova prenotazione</h1>
 
     <div id="alertBox" class="mt-3"></div>
@@ -37,7 +37,7 @@ require_once __DIR__ . '/../common/config.php'; // sessione
           </div>
 
           <div class="col-12 col-md-4">
-            <label class="form-label">Ora inizio (9-23)</label>
+            <label class="form-label">Ora inizio (9-22)</label>
             <select class="form-select" name="ora_inizio" id="startSelect" required>
               <option value="">Seleziona...</option>
             </select>

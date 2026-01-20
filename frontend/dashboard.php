@@ -1,156 +1,148 @@
-<?php
-declare(strict_types=1);
-
-$nome = $_SESSION['user_nome'] ?? 'Utente';
-$ruolo = $_SESSION['user_ruolo'] ?? '';
-
-$uid = (int)($_SESSION['user_id'] ?? 0);
-
-$isResponsabile = false;
-if ($uid > 0) {
-  $st = $pdo->prepare("SELECT 1 FROM Settore WHERE id_responsabile = ? LIMIT 1");
-  $st->execute([$uid]);
-  $isResponsabile = (bool)$st->fetchColumn();
-}
-?>
+<?php declare(strict_types=1); ?>
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dashboard - Play Room Planner</title>
-
-  <link rel="stylesheet" href="CSS/app.css">
   
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="CSS/app.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 </head>
-
 <body class="bg-light">
+
   <div class="container py-4">
-
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
-        <div class="text-muted small">Play Room Planner</div>
-        <h1 class="h3 mb-1">Dashboard</h1>
-        <div class="text-muted">
-          Benvenuto, <strong><?php echo htmlspecialchars($nome); ?></strong>
-          <?php if ($ruolo !== ''): ?>
-            <span class="ms-2 badge text-bg-secondary">ruolo: <?php echo htmlspecialchars($ruolo); ?></span>
-          <?php endif; ?>
-        </div>
+        <h1 class="h3 mb-0">Dashboard</h1>
+        <p class="text-muted mb-0">
+          Benvenuto, <strong><?php echo htmlspecialchars($_SESSION['user_nome'] ?? 'Utente'); ?></strong>
+          <span class="badge bg-secondary ms-2"><?php echo htmlspecialchars($_SESSION['user_ruolo'] ?? ''); ?></span>
+        </p>
       </div>
-
       <div class="d-flex gap-2">
-        <a class="btn btn-outline-secondary" href="index.php?page=profile">Profilo</a>
-        <a class="btn btn-danger" href="index.php?page=logout">Logout</a>
+        <a href="index.php?page=profile" class="btn btn-outline-secondary"><i class="bi bi-person-circle"></i> Profilo</a>
+        <a href="index.php?page=logout" class="btn btn-danger"><i class="bi bi-box-arrow-right"></i> Logout</a>
       </div>
     </div>
 
-    <!-- KPI -->
-    <div class="row g-3 mb-3">
-      <div class="col-12 col-md-4">
-        <div class="card shadow-sm border-0">
-          <div class="card-body">
-            <div class="text-muted small">Inviti pendenti</div>
-            <div class="d-flex align-items-baseline gap-2">
-              <div class="display-6 mb-0" id="kpiPending">—</div>
-              <span class="text-muted">da oggi</span>
-            </div>
-            <a href="index.php?page=invites" class="btn btn-sm btn-outline-primary mt-2">Apri inviti</a>
-          </div>
-        </div>
-      </div>
+    <div class="row g-3 mb-4">
+       <div class="col-md-4">
+         <div class="card shadow-sm border-0 border-start border-4 border-primary h-100">
+           <div class="card-body">
+             <div class="text-muted small text-uppercase fw-bold">Inviti da gestire</div>
+             <div class="d-flex align-items-center justify-content-between mt-2">
+               <div class="h3 mb-0 fw-bold" id="kpiPending">-</div> 
+               <i class="bi bi-envelope fs-1 text-primary opacity-25"></i>
+             </div>
+           </div>
+         </div>
+       </div>
 
-      <div class="col-12 col-md-4">
-        <div class="card shadow-sm border-0">
-          <div class="card-body">
-            <div class="text-muted small">Impegni futuri</div>
-            <div class="d-flex align-items-baseline gap-2">
-              <div class="display-6 mb-0" id="kpiAccepted">—</div>
-              <span class="text-muted">accettati</span>
-            </div>
-            <a href="index.php?page=my_week" class="btn btn-sm btn-outline-primary mt-2">Vai a calendario</a>
-          </div>
-        </div>
-      </div>
+       <div class="col-md-4">
+         <div class="card shadow-sm border-0 border-start border-4 border-info h-100">
+           <div class="card-body">
+             <div class="text-muted small text-uppercase fw-bold">Questa settimana</div>
+             <div class="d-flex align-items-center justify-content-between mt-2">
+               <div class="h3 mb-0 fw-bold" id="kpiPlannedWeek">-</div>
+               <i class="bi bi-calendar-week fs-1 text-info opacity-25"></i>
+             </div>
+           </div>
+         </div>
+       </div>
 
-      <div class="col-12 col-md-4">
-        <div class="card shadow-sm border-0">
-          <div class="card-body">
-            <div class="text-muted small">Prossimo impegno</div>
-            <div class="fw-semibold" id="nextTitle">—</div>
-            <div class="text-muted small" id="nextMeta">—</div>
-            <a href="index.php?page=my_week" class="btn btn-sm btn-outline-primary mt-2">Dettagli</a>
-          </div>
-        </div>
-      </div>
+       <div class="col-md-4">
+         <div class="card shadow-sm border-0 border-start border-4 border-warning h-100">
+           <div class="card-body">
+             <div class="text-muted small text-uppercase fw-bold">Prossimo impegno</div>
+             <div class="mt-2 text-truncate fw-bold" id="nextTitle">Nessun impegno</div>
+             <small class="text-muted d-block mb-2" id="nextWhen">--</small>
+             <a href="#" id="nextDetailsBtn" class="btn btn-sm btn-outline-warning disabled">
+                Dettagli <i class="bi bi-arrow-right-short"></i>
+             </a>
+           </div>
+         </div>
+       </div>
     </div>
 
-    <div id="dashAlert"></div>
+    <h5 class="mb-3 text-secondary">Menu Rapido</h5>
 
-    <!-- Navigazione -->
-    <div class="row g-3">
-
-      <div class="col-12 col-lg-6">
-        <div class="card shadow-sm border-0 h-100">
+    <div class="row g-4">
+      
+      <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm border-0 h-100 hover-shadow transition">
           <div class="card-body">
-            <h2 class="h5 mb-2">Inviti</h2>
-            <p class="text-muted mb-3">Accetta o rifiuta con motivazione e gestisci le prenotazioni future.</p>
-            <a class="btn btn-primary" href="index.php?page=invites">Vai agli inviti</a>
+            <h5 class="card-title text-primary"><i class="bi bi-envelope-open me-2"></i>Inviti</h5>
+            <p class="card-text text-muted small">Gestisci gli inviti ricevuti.</p>
+            <a href="index.php?page=invites" class="btn btn-primary w-100">Vai agli inviti</a>
           </div>
         </div>
       </div>
 
-      <div class="col-12 col-lg-6">
-        <div class="card shadow-sm border-0 h-100">
+      <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm border-0 h-100 hover-shadow transition">
           <div class="card-body">
-            <h2 class="h5 mb-2">I miei impegni (settimana)</h2>
-            <p class="text-muted mb-3">Consulta gli impegni settimanali a partire da un giorno qualsiasi.</p>
-            <a class="btn btn-primary" href="index.php?page=my_week">Apri calendario</a>
+            <h5 class="card-title text-primary"><i class="bi bi-calendar-check me-2"></i>I miei impegni</h5>
+            <p class="card-text text-muted small">Consulta il tuo calendario.</p>
+            <a href="index.php?page=my_week" class="btn btn-primary w-100">Apri calendario</a>
           </div>
         </div>
       </div>
 
-      <div class="col-12 col-lg-6">
-        <div class="card shadow-sm border-0 h-100">
+      <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm border-0 h-100 hover-shadow transition">
           <div class="card-body">
-            <h2 class="h5 mb-2">Sale prove</h2>
-            <p class="text-muted mb-3">Visualizza sale e prenotazioni settimanali per sala.</p>
-            <a class="btn btn-primary" href="index.php?page=rooms">Vai alle sale</a>
+            <h5 class="card-title text-primary"><i class="bi bi-music-note-beamed me-2"></i>Sale prove</h5>
+            <p class="card-text text-muted small">Esplora sale e dotazioni.</p>
+            <a href="index.php?page=rooms" class="btn btn-primary w-100">Vai alle sale</a>
+          </div>
+        </div>
+      </div>
+      
+      <?php 
+      $ruolo = $_SESSION['user_ruolo'] ?? '';
+      ?>
+
+      <?php if ($ruolo === 'tecnico' || $ruolo === 'docente'): ?>
+      <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm border-0 h-100 hover-shadow transition">
+          <div class="card-body">
+            <h5 class="card-title text-success"><i class="bi bi-plus-circle me-2"></i>Prenota</h5>
+            <p class="card-text text-muted small">Crea una nuova prenotazione.</p>
+            <a href="index.php?page=booking_new" class="btn btn-success w-100 text-white">Nuova prenotazione</a>
+          </div>
+        </div>
+      </div>
+      <?php endif; ?>
+
+      <?php if ($ruolo === 'tecnico'): ?>
+      <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm border-0 h-100 hover-shadow transition">
+          <div class="card-body">
+            <h5 class="card-title text-primary"><i class="bi bi-bar-chart-line me-2"></i>Statistiche</h5>
+            <p class="card-text text-muted small">Visualizza grafici utilizzo aule.</p>
+            <a href="index.php?page=reports" class="btn btn-primary w-100">Apri report</a>
           </div>
         </div>
       </div>
 
-      <div class="col-12 col-lg-6">
-        <div class="card shadow-sm border-0 h-100">
+      <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm border-0 h-100 hover-shadow transition">
           <div class="card-body">
-            <h2 class="h5 mb-2">Gestione prenotazioni</h2>
-            <p class="text-muted mb-3">Crea, modifica o cancella prenotazioni (solo responsabili).</p>
-
-            <?php if ($isResponsabile): ?>
-              <a class="btn btn-success" href="index.php?page=booking_new">Nuova prenotazione</a>
-            <?php else: ?>
-              <button class="btn btn-success" type="button" disabled>Nuova prenotazione</button>
-              <div class="small text-muted mt-2">Funzione disponibile solo per responsabili.</div>
-            <?php endif; ?>
-
-
+            <h5 class="card-title text-dark"><i class="bi bi-people me-2"></i>Gestione iscritti</h5>
+            <p class="card-text text-muted small">Amministra utenti e ruoli.</p>
+            <a href="index.php?page=users_manage" class="btn btn-dark w-100">Gestisci iscritti</a>
           </div>
         </div>
       </div>
-
-      <div class="col-12">
-        <div class="card shadow-sm border-0">
-          <div class="card-body">
-            <h2 class="h5 mb-2">Operazioni & report</h2>
-            <p class="text-muted mb-3">Conteggi e query richieste dal progetto (parte “Operazioni”).</p>
-            <a class="btn btn-outline-primary" href="index.php?page=reports">Apri report</a>
-          </div>
-        </div>
-      </div>
+      <?php endif; ?>
 
     </div>
   </div>
 
-  <script src="JS/dashboard.js"></script>
+  
+  <script src="js/dashboard.js"></script>
 </body>
 </html>

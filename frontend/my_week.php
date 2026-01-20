@@ -25,8 +25,6 @@ $sunday = date('Y-m-d', $sundayTs);
   <title>I miei impegni (settimana)</title>
 
   <link rel="stylesheet" href="CSS/app.css">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
   <style>
     .week-form .form-label { margin-bottom: .25rem; }
   </style>
@@ -36,7 +34,7 @@ $sunday = date('Y-m-d', $sundayTs);
   <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
       <div>
-        <a href="index.php?page=dashboard" class="btn btn-outline-secondary btn-sm">&larr; Dashboard</a>
+        <a href="index.php?page=dashboard" class="btn btn-outline-secondary">&larr; Torna alla Dashboard</a>
         <h1 class="h4 mt-2 mb-0">I miei impegni (settimana)</h1>
         <div class="text-muted small">
           Settimana selezionata:

@@ -10,9 +10,6 @@ declare(strict_types=1);
   <title>Inviti - Play Room Planner</title>
 
   <link rel="stylesheet" href="CSS/app.css">
-
-  <!-- Bootstrap (se già incluso globalmente puoi rimuoverlo) -->
- <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"> -->
 </head>
 
 <body class="bg-light">
@@ -20,7 +17,7 @@ declare(strict_types=1);
 
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
       <div>
-        <a href="index.php?page=dashboard" class="btn btn-outline-secondary btn-sm">&larr; Dashboard</a>
+        <a href="index.php?page=dashboard" class="btn btn-outline-secondary">&larr; Torna alla Dashboard</a>
         <h1 class="h4 mt-2 mb-0">Inviti</h1>
         <div class="text-muted small">
           Qui trovi le prenotazioni a cui sei stato invitato, puoi accettare o rifiutare con motivazione.

@@ -1,43 +1,63 @@
-// JS/dashboard.js
-const API_STATS = 'api/dashboard_stats.php';
+'use strict';
 
-function esc(str) {
-  return String(str ?? '').replace(/[&<>"']/g, m => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[m]));
+async function apiGet(url) {
+    const res = await fetch(url);
+    let payload = null;
+    try { payload = await res.json(); } catch (_) {}
+
+    if (!res.ok) throw new Error(payload?.message || `HTTP ${res.status}`);
+    if (!payload || payload.ok !== true) throw new Error(payload?.message || 'Errore richiesta');
+    
+    return payload.data;
 }
 
-function showAlert(type, text) {
-  const box = document.getElementById('dashAlert');
-  box.innerHTML = `
-    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-      ${esc(text)}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
-    </div>`;
+function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(value);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    const res = await fetch(API_STATS);
-    const payload = await res.json().catch(() => ({}));
+    try {
+        const stats = await apiGet('api/dashboard_stats.php');
 
-    if (!res.ok || payload.ok !== true) {
-      throw new Error(payload.message || 'Errore caricamento dashboard');
+        // 1. KPI
+        setText('kpiPending', stats.pending_invites ?? 0);
+        setText('kpiPlannedWeek', stats.planned_week ?? 0);
+
+        // 2. Next Event
+        const btn = document.getElementById('nextDetailsBtn');
+
+        if (stats.next_event) {
+            // Se c'è un evento
+            setText('nextTitle', `${stats.next_event.attivita} • ${stats.next_event.nome_sala}`);
+            
+            // Formattiamo la data (YYYY-MM-DD -> DD/MM/YYYY)
+            // Se la data arriva come stringa, new Date() la parsa
+            const d = new Date(stats.next_event.data);
+            const dataStr = d.toLocaleDateString('it-IT');
+            
+            setText('nextWhen', `${dataStr} ore ${stats.next_event.ora_inizio}:00 (${stats.next_event.durata_ore}h)`);
+            
+            if (btn) {
+                // Link alla pagina dettaglio (che faremo prossimamente)
+                btn.href = `index.php?page=booking_view&id=${stats.next_event.id_prenotazione}`;
+                btn.classList.remove('disabled');
+                btn.classList.add('btn-warning'); 
+                btn.classList.remove('btn-outline-warning');
+            }
+        } else {
+            // Nessun evento
+            setText('nextTitle', 'Nessun impegno imminente');
+            setText('nextWhen', 'Tutto libero!');
+            if (btn) {
+                btn.classList.add('disabled');
+                btn.href = '#';
+            }
+        }
+
+    } catch (err) {
+        console.error("Dashboard error:", err);
+        setText('kpiPending', '-');
+        setText('kpiPlannedWeek', '-');
     }
-
-    const d = payload.data || {};
-    document.getElementById('kpiPending').textContent = d.pending_invites ?? 0;
-    document.getElementById('kpiAccepted').textContent = d.accepted_future ?? 0;
-
-    const next = d.next_event;
-    if (!next) {
-      document.getElementById('nextTitle').textContent = 'Nessun impegno pianificato';
-      document.getElementById('nextMeta').textContent = '—';
-    } else {
-      document.getElementById('nextTitle').textContent = `${next.attivita || 'Attività'} • ${next.nome_sala}`;
-      document.getElementById('nextMeta').textContent = `${next.data} alle ${next.ora_inizio}:00 (${next.durata_ore}h)`;
-    }
-  } catch (e) {
-    showAlert('warning', e.message);
-  }
 });

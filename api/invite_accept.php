@@ -49,10 +49,15 @@ try {
   if (!$p) err('Prenotazione non trovata', 404);
 
   // capienza: conta accettati
-  $stmt = $pdo->prepare("SELECT COUNT(*) AS n FROM invito WHERE id_prenotazione=? AND stato='accettato'");
-  $stmt->execute([$idPren]);
-  $nAcc = (int)$stmt->fetch()['n'];
-  if ($nAcc >= (int)$p['capienza']) err('Posti esauriti per questa sala', 409);
+  $stmt = $pdo->prepare("
+    SELECT (
+        1 +  -- ← ORGANIZZATORE SEMPRE contato
+        (SELECT COUNT(*) FROM invito WHERE id_prenotazione=? AND stato='accettato')
+    ) AS n_accettati_totali
+");
+$stmt->execute([$idPren]);
+$nAcc = (int)$stmt->fetch()['n_accettati_totali'];
+if ($nAcc >= (int)$p['capienza']) err('Posti esauriti', 409);
 
   // sovrapposizione con altre prenotazioni ACCETTATE dall'utente nello stesso giorno
   // Intervalli: [ora_inizio, ora_inizio+durata_ore)

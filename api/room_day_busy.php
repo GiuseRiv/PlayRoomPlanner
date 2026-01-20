@@ -31,7 +31,7 @@ foreach ($rows as $r) {
   $dur   = (int)$r['durata_ore'];
   // occupate: start .. start+dur-1
   for ($h = $start; $h < ($start + $dur); $h++) {
-    if ($h >= 9 && $h <= 23) $busy[$h] = true;
+    if ($h >= 9 && $h <= 22) $busy[$h] = true;
   }
 }
 

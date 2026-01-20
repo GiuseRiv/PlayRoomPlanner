@@ -11,6 +11,7 @@ function esc(str) {
 
 function showAlert(type, text) {
   const box = document.getElementById('alertBox');
+  if (!box) return;
   box.innerHTML = `
     <div class="alert alert-${type} alert-dismissible fade show" role="alert">
       ${esc(text)}
@@ -19,10 +20,10 @@ function showAlert(type, text) {
 }
 
 async function apiGet(url) {
-  const res = await fetch(url, { credentials: 'same-origin' });
+  const res = await fetch(url, { credentials: 'same-origin' }); // cookie sessione [web:137]
   const payload = await res.json().catch(() => ({}));
   if (!res.ok || payload.ok !== true) throw new Error(payload.message || 'Errore');
-  return payload.data;
+  return payload.data ?? payload; // tollerante
 }
 
 async function apiPost(url, bodyObj) {
@@ -34,21 +35,22 @@ async function apiPost(url, bodyObj) {
   });
   const payload = await res.json().catch(() => ({}));
   if (!res.ok || payload.ok !== true) throw new Error(payload.message || 'Errore richiesta');
-  return payload.data;
+  return payload.data ?? payload;
 }
 
 function fillRooms(rooms) {
   const sel = document.getElementById('roomSelect');
   sel.innerHTML = `<option value="">Seleziona una sala...</option>`;
+
   rooms.forEach(r => {
     const label = `${r.nome_settore} • ${r.nome_sala} (capienza ${r.capienza})`;
     const opt = document.createElement('option');
-    opt.value = r.id_sala;
+    opt.value = String(r.id_sala);
     opt.textContent = label;
 
-    // utili per UI/inviti
-    opt.dataset.settoreId = r.id_settore;
-    opt.dataset.settoreNome = r.nome_settore;
+    opt.dataset.settoreId = String(r.id_settore);
+    opt.dataset.settoreNome = String(r.nome_settore);
+
     sel.appendChild(opt);
   });
 }
@@ -56,8 +58,10 @@ function fillRooms(rooms) {
 function fillSectorsFromRooms(rooms) {
   const map = new Map();
   rooms.forEach(r => map.set(String(r.id_settore), r.nome_settore));
+
   const sel = document.getElementById('sectorSelect');
   sel.innerHTML = `<option value="">Seleziona settore...</option>`;
+
   [...map.entries()]
     .sort((a,b)=>a[1].localeCompare(b[1]))
     .forEach(([id, nome]) => {
@@ -83,8 +87,6 @@ function todayISO() {
 }
 
 function minStartHourForDay(dayStr) {
-  // Regola: non prenotare "prima di adesso".
-  // Se oggi: solo dalla prossima ora intera.
   const now = new Date();
   const t = todayISO();
   if (dayStr !== t) return 9;
@@ -98,7 +100,7 @@ function fillStartHoursForDay(dayStr) {
   const minH = minStartHourForDay(dayStr);
 
   sel.innerHTML = `<option value="">Seleziona...</option>`;
-  for (let h = minH; h <= 23; h++) {
+  for (let h = minH; h <= 22; h++) {
     const opt = document.createElement('option');
     opt.value = String(h);
     opt.textContent = `${String(h).padStart(2,'0')}:00`;
@@ -114,7 +116,6 @@ function fillDurations(startHour) {
   const h = parseInt(startHour, 10);
   if (!Number.isFinite(h)) return;
 
-  // Deve finire entro le 23 => maxDur = 23 - h
   const maxDur = Math.max(1, 23 - h);
   for (let d = 1; d <= maxDur; d++) {
     const opt = document.createElement('option');
@@ -125,7 +126,7 @@ function fillDurations(startHour) {
 }
 
 async function loadBusyHours(idSala, dateStr) {
-  if (!idSala || !dateStr) return [];
+  if (!Number.isFinite(idSala) || idSala <= 0 || !dateStr) return [];
   const url = `${API_ROOM_BUSY}?id_sala=${encodeURIComponent(idSala)}&date=${encodeURIComponent(dateStr)}`;
   const data = await apiGet(url);
   return Array.isArray(data.busy_hours) ? data.busy_hours : [];
@@ -139,11 +140,47 @@ function applyBusyToStartSelect(busyHours) {
     if (!opt.value) return;
     if (busySet.has(opt.value)) {
       opt.disabled = true;
-      opt.textContent = opt.textContent + ' (occupata)';
+      if (!opt.textContent.includes('(occupata)')) {
+        opt.textContent = opt.textContent + ' (occupata)';
+      }
     }
   });
 }
 
+async function refreshBusyUI() {
+  const roomSelectEl = document.getElementById('roomSelect');
+  const dateInputEl = document.getElementById('dateInput');
+  const startSelectEl = document.getElementById('startSelect');
+  const durSelectEl = document.getElementById('durSelect');
+
+  const idSala = parseInt(roomSelectEl.value, 10);
+  const dateStr = dateInputEl.value;
+
+  if (!Number.isFinite(idSala) || idSala <= 0 || !dateStr) {
+    // rigenera comunque ore base per giorno
+    fillStartHoursForDay(dateStr || todayISO());
+    fillDurations('');
+    durSelectEl.value = '';
+    return;
+  }
+
+  const prevStart = startSelectEl.value;
+
+  fillStartHoursForDay(dateStr);
+
+  try {
+    const busy = await loadBusyHours(idSala, dateStr);
+    applyBusyToStartSelect(busy);
+  } catch (e) {
+    showAlert('warning', 'Non riesco a verificare le ore occupate (continua comunque).');
+  }
+
+  const opt = [...startSelectEl.options].find(o => o.value === prevStart);
+  startSelectEl.value = (opt && !opt.disabled) ? prevStart : '';
+
+  fillDurations(startSelectEl.value);
+  durSelectEl.value = '';
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   const form = document.getElementById('bookingForm');
@@ -155,25 +192,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   inviteMode.addEventListener('change', updateInviteModeUI);
   updateInviteModeUI();
 
-  // data min = oggi
   const t = todayISO();
   dateInput.min = t;
   if (!dateInput.value) dateInput.value = t;
 
-  // ore/durate iniziali
   fillStartHoursForDay(dateInput.value);
   fillDurations(null);
 
-  dateInput.addEventListener('change', () => {
-    // cambio giorno => aggiorno ore minime e reset durata
+  dateInput.addEventListener('change', async () => {
     const prevStart = startSelect.value;
     fillStartHoursForDay(dateInput.value);
 
-    // se l'ora precedente non è più valida, reset
     const stillExists = [...startSelect.options].some(o => o.value === prevStart);
     startSelect.value = stillExists ? prevStart : '';
     fillDurations(startSelect.value);
     durSelect.value = '';
+
+    await refreshBusyUI();
   });
 
   startSelect.addEventListener('change', () => {
@@ -185,48 +220,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const data = await apiGet(API_ROOMS);
     const rooms = data.rooms || [];
+
+    const roomSelectEl = document.getElementById('roomSelect');
+
     if (!rooms.length) {
       showAlert('warning', 'Nessuna sala prenotabile disponibile per il tuo account.');
-      document.getElementById('roomSelect').innerHTML = `<option value="">Nessuna sala disponibile</option>`;
+      roomSelectEl.innerHTML = `<option value="">Nessuna sala disponibile</option>`;
     } else {
       fillRooms(rooms);
       fillSectorsFromRooms(rooms);
+
+      // seleziona prima sala automaticamente per evitare id_sala vuoto/NaN
+      roomSelectEl.value = String(rooms[0].id_sala);
+
       await refreshBusyUI();
     }
   } catch (e) {
+    console.error(e);
     showAlert('danger', e.message);
     document.getElementById('roomSelect').innerHTML = `<option value="">Errore caricamento sale</option>`;
   }
 
-  const roomSelect = document.getElementById('roomSelect');
-
-async function refreshBusyUI() {
-  const idSala = parseInt(roomSelect.value, 10);
-  const dateStr = dateInput.value;
-
-  // rigenera ore base (minime per giorno)
-  const prevStart = startSelect.value;
-  fillStartHoursForDay(dateStr);
-
-  // applica ore occupate
-  try {
-    const busy = await loadBusyHours(idSala, dateStr);
-    applyBusyToStartSelect(busy);
-  } catch (e) {
-    // non blocco la UI se fallisce, ma avviso
-    showAlert('warning', 'Non riesco a verificare le ore occupate (continua comunque).');
-  }
-
-  // ripristina selezione se ancora valida e non disabilitata
-  const opt = [...startSelect.options].find(o => o.value === prevStart);
-  startSelect.value = (opt && !opt.disabled) ? prevStart : '';
-
-  fillDurations(startSelect.value);
-  durSelect.value = '';
-}
-
-roomSelect.addEventListener('change', refreshBusyUI);
-dateInput.addEventListener('change', refreshBusyUI);
+  // listeners che dipendono dal DOM già pronto
+  document.getElementById('roomSelect').addEventListener('change', refreshBusyUI);
 
   // 2) submit: crea prenotazione -> (opzionale) crea inviti
   form.addEventListener('submit', async (e) => {
@@ -245,7 +261,6 @@ dateInput.addEventListener('change', refreshBusyUI);
       return;
     }
 
-    // extra check client: oggi non prima della prossima ora
     const minH = minStartHourForDay(data);
     if (ora_inizio < minH) {
       showAlert('warning', `Per la data selezionata l'ora minima prenotabile è ${String(minH).padStart(2,'0')}:00.`);
@@ -253,11 +268,9 @@ dateInput.addEventListener('change', refreshBusyUI);
     }
 
     try {
-      // crea prenotazione
       const created = await apiPost(API_BOOKINGS, { id_sala, data, ora_inizio, durata_ore, attivita });
       const id_prenotazione = created.id_prenotazione;
 
-      // inviti opzionali
       const mode = fd.get('invite_mode');
 
       if (mode && mode !== 'none') {
@@ -284,7 +297,7 @@ dateInput.addEventListener('change', refreshBusyUI);
       setTimeout(() => { window.location.href = 'index.php?page=dashboard'; }, 600);
 
     } catch (err) {
-      showAlert('danger', err.message);
+      showAlert('danger', err.message || 'Errore');
     }
   });
 });

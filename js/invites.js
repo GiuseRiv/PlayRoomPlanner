@@ -102,7 +102,7 @@ async function loadInvites() {
     throw new Error(payload.message || 'Errore caricamento inviti');
   }
 
-  const invites = payload.data?.invites || [];
+  const invites = Array.isArray(payload.data) ? payload.data : (payload.data?.invites || []);
   if (invites.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" class="text-muted">Nessun invito da mostrare.</td></tr>`;
     return;

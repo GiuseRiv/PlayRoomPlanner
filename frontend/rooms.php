@@ -13,7 +13,7 @@ require_once __DIR__ . '/../common/config.php'; // sessione + $pdo
 
 <body class="bg-light">
   <div class="container py-4">
-    <a href="index.php?page=dashboard" class="btn btn-outline-secondary btn-sm">&larr; Dashboard</a>
+    <a href="index.php?page=dashboard" class="btn btn-outline-secondary">&larr; Torna alla Dashboard</a>
     <h1 class="h4 mt-3">Sale prove</h1>
 
     <div class="card shadow-sm border-0 mt-3">
