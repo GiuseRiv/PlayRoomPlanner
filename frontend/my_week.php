@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 $day = $_GET['day'] ?? date('Y-m-d');
 
-// calcolo lun-dom ISO: lunedì = 1, domenica = 7
+
 $ts = strtotime($day);
 if ($ts === false) {
   $day = date('Y-m-d');
@@ -102,8 +102,6 @@ $sunday = date('Y-m-d', $sundayTs);
     </div>
   </div>
 
-  <!-- Bootstrap JS (bundle) -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script src="JS/my_week.js"></script>
 </body>

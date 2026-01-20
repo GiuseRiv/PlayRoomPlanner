@@ -26,7 +26,7 @@ if ($ts === false) {
   exit;
 }
 
-// lun-dom ISO
+
 $dow = (int)date('N', $ts);
 $mondayTs = strtotime('-' . ($dow - 1) . ' day', $ts);
 $sundayTs = strtotime('+' . (7 - $dow) . ' day', $ts);

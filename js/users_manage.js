@@ -1,9 +1,8 @@
 'use strict';
 
-// URL API
-const API_USERS_ADMIN = 'api/users_admin.php';
-const API_SECTORS = 'api/sectors.php';
-const API_SINGLE_USER = 'api/users.php';
+const API_USERS_ADMIN = 'backend/users_admin.php';
+const API_SECTORS = 'backend/sectors.php';
+const API_SINGLE_USER = 'backend/users.php';
 
 let allUsers = [];
 let currentSort = {
@@ -11,7 +10,7 @@ let currentSort = {
     order: 'asc'        // 'asc' o 'desc'
 };
 
-// Funzione Helper per mostrare alert
+
 function showAlert(type, msg) {
   const box = document.getElementById('alertBox');
   if(box) {
@@ -19,7 +18,7 @@ function showAlert(type, msg) {
   }
 }
 
-// Funzione generica per chiamate API
+
 async function apiRequest(method, url) {
   const res = await fetch(url, { method });
   if (!res.ok) throw new Error(`Errore HTTP ${res.status}`);
@@ -28,21 +27,21 @@ async function apiRequest(method, url) {
   return json.data;
 }
 
-// === FUNZIONI DI ORDINAMENTO (MANCANTI) ===
+
 function applySortInternal() {
   const { key, order } = currentSort;
   allUsers.sort((a, b) => {
     let va = a[key] ?? '';
     let vb = b[key] ?? '';
 
-    // Confronto numerico per ID
+    
     if (key === 'id_iscritto') {
       va = Number(va);
       vb = Number(vb);
       return order === 'asc' ? va - vb : vb - va;
     }
 
-    // Confronto stringhe per altri campi
+    
     va = String(va).toLowerCase();
     vb = String(vb).toLowerCase();
     if (va < vb) return order === 'asc' ? -1 : 1;
@@ -63,7 +62,7 @@ function sortTable(key) {
 }
 
 function updateSortIcons() {
-  // Aggiorna icone nelle intestazioni (opzionale ma bello)
+  
   const headers = document.querySelectorAll('th[onclick]');
   headers.forEach(th => {
     const icon = th.querySelector('i');
@@ -79,27 +78,27 @@ function updateSortIcons() {
   });
 }
 
-// --- FUNZIONE CHE DISEGNA LA RIGA ---
+
 function renderUser(user) {
-  // 1. Badge colorato per il ruolo
-  let badgeClass = 'bg-secondary'; // default allievo
+  
+  let badgeClass = 'bg-secondary'; 
   if (user.ruolo === 'docente') badgeClass = 'bg-primary';
   if (user.ruolo === 'tecnico') badgeClass = 'bg-dark';
 
-  // 2. Percorso foto
+  
   const fotoSrc = (user.foto && user.foto !== 'default.png') 
                   ? `uploads/${user.foto}` 
                   : 'images/default.png';
 
-  // 3. RECUPERO RUOLO ATTUALE
+  
   const myRoleInput = document.getElementById('myUserRole');
   const myRole = myRoleInput ? myRoleInput.value : '';
 
-  // 4. DECISIONE AZIONI
+  
   let actionsHtml = '';
   
   if (myRole === 'tecnico') {
-      // TECNICO: Vede i bottoni Modifica ed Elimina
+      
       actionsHtml = `
         <a href="index.php?page=users_edit&id=${user.id_iscritto}" class="btn btn-sm btn-outline-primary" title="Modifica">
             <i class="bi bi-pencil-square"></i>
@@ -109,11 +108,11 @@ function renderUser(user) {
         </button>
       `;
   } else {
-      // DOCENTE / ALTRI: Niente bottoni inutili. 
+       
       actionsHtml = `<span class="text-muted opacity-50" title="Non modificabile"><i class="bi bi-lock-fill"></i></span>`;
   }
 
-  // 5. Ritorna HTML
+  
   return `
     <tr>
       <td>${user.id_iscritto}</td>
@@ -131,22 +130,22 @@ function renderUser(user) {
   `;
 }
 
-// Caricamento Lista Utenti
+
 async function loadUsers(params = '') {
   const tbody = document.getElementById('usersTbody');
   if(!tbody) return;
 
   try {
-    // Spinner caricamento
+    
     tbody.innerHTML = `<tr><td colspan="7" class="text-center p-3">Caricamento...</td></tr>`;
     
-    // 1. Scarica i dati
+   
     allUsers = await apiRequest('GET', `${API_USERS_ADMIN}?${params}`);
     
-    // 2. Applica l'ordinamento corrente prima di disegnare
+    
     applySortInternal();
 
-    // 3. Disegna
+    
     drawTable();
 
   } catch (e) {
@@ -156,7 +155,7 @@ async function loadUsers(params = '') {
   }
 }
 
-// Funzione helper per disegnare la tabella
+
 function drawTable() {
     const tbody = document.getElementById('usersTbody');
     if (allUsers.length === 0) {
@@ -167,7 +166,7 @@ function drawTable() {
     updateSortIcons();
 }
 
-// Gestione Filtri
+
 function applyFilters() {
   const role = document.getElementById('roleFilter').value;
   const search = document.getElementById('searchInput').value;
@@ -176,9 +175,9 @@ function applyFilters() {
   loadUsers(params.toString());
 }
 
-// AVVIO PAGINA
+
 document.addEventListener('DOMContentLoaded', async () => {
-  // 1. Carica Settori per la select
+  
   try {
      const s = await apiRequest('GET', API_SECTORS);
      const sectorFilter = document.getElementById('sectorFilter');
@@ -187,10 +186,10 @@ document.addEventListener('DOMContentLoaded', async () => {
      }
   } catch(e) { console.error("Errore caricamento settori", e); }
   
-  // 2. Carica Utenti
+ 
   loadUsers();
 
-  // 3. Listener Tabella (per click su Elimina)
+  
   const tbody = document.getElementById('usersTbody');
   if(tbody) {
     tbody.addEventListener('click', async e => {
@@ -199,7 +198,7 @@ document.addEventListener('DOMContentLoaded', async () => {
          try {
            await apiRequest('DELETE', `${API_SINGLE_USER}?id=${delBtn.dataset.id}`);
            showAlert('success', 'Utente eliminato con successo');
-           applyFilters(); // Ricarica lista
+           applyFilters(); 
          } catch (err) {
            showAlert('danger', 'Impossibile eliminare: ' + err.message);
          }
@@ -207,7 +206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 4. Listener Filtri
+  
   const roleFilter = document.getElementById('roleFilter');
   if(roleFilter) roleFilter.onchange = applyFilters;
   

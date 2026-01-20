@@ -1,4 +1,5 @@
-<?php declare(strict_types=1);
+<?php
+ declare(strict_types=1);
 require_once __DIR__ . '/../common/config.php';
 require_once __DIR__ . '/../common/api_auth.php';
 
@@ -14,18 +15,17 @@ $id = (int)($body['id_iscritto'] ?? 0);
 if ($id <= 0) err('ID mancante');
 
 $ruolo = trim($body['ruolo'] ?? '');
-$settori = $body['settori'] ?? []; // array id_settore
+$settori = $body['settori'] ?? [];
 
 try {
   $pdo->beginTransaction();
   
-  // 1. Update ruolo
+
   if ($ruolo) {
     $st = $pdo->prepare('UPDATE Iscritto SET ruolo=? WHERE id_iscritto=?');
     $st->execute([$ruolo, $id]);
   }
   
-  // 2. Sostituisci afferisce (DELETE + INSERT)
   $pdo->prepare('DELETE FROM afferisce WHERE id_iscritto=?')->execute([$id]);
   if ($settori) {
     $st = $pdo->prepare('INSERT INTO afferisce (id_iscritto, id_settore) VALUES (?,?)');

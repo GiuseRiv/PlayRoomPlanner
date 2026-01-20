@@ -1,5 +1,5 @@
 <?php
-// VINCOLI applicati: non superare la capienza (conta accettati), non avere sovrapposizioni con altre prenotazioni già accettate dall’utente
+//non superare la capienza (conta accettati), non avere sovrapposizioni con altre prenotazioni
 
 declare(strict_types=1);
 
@@ -29,14 +29,14 @@ $uid = (int)$_SESSION['user_id'];
 try {
   $pdo->beginTransaction();
 
-  // blocco la riga invito (se esiste)
+
   $stmt = $pdo->prepare("SELECT stato FROM invito WHERE id_iscritto=? AND id_prenotazione=? FOR UPDATE");
   $stmt->execute([$uid, $idPren]);
   $inv = $stmt->fetch();
   if (!$inv) err('Invito non trovato', 404);
   if ($inv['stato'] === 'accettato') ok(['message'=>'Già accettato']);
 
-  // dati prenotazione + sala
+
   $stmt = $pdo->prepare("
     SELECT p.id_prenotazione, p.data, p.ora_inizio, p.durata_ore, p.id_sala, s.capienza
     FROM Prenotazione p
@@ -48,7 +48,7 @@ try {
   $p = $stmt->fetch();
   if (!$p) err('Prenotazione non trovata', 404);
 
-  // capienza: conta accettati
+  
   $stmt = $pdo->prepare("
     SELECT (
         1 +  -- ← ORGANIZZATORE SEMPRE contato
@@ -59,8 +59,7 @@ $stmt->execute([$idPren]);
 $nAcc = (int)$stmt->fetch()['n_accettati_totali'];
 if ($nAcc >= (int)$p['capienza']) err('Posti esauriti', 409);
 
-  // sovrapposizione con altre prenotazioni ACCETTATE dall'utente nello stesso giorno
-  // Intervalli: [ora_inizio, ora_inizio+durata_ore)
+ 
   $stmt = $pdo->prepare("
     SELECT p2.id_prenotazione
     FROM invito i2
@@ -84,7 +83,7 @@ if ($nAcc >= (int)$p['capienza']) err('Posti esauriti', 409);
   $over = $stmt->fetch();
   if ($over) err('Hai già un impegno sovrapposto in quell’orario', 409);
 
-  // aggiorno stato invito
+  
   $stmt = $pdo->prepare("
     UPDATE invito
     SET stato='accettato', data_risposta=NOW(), motivazione_rifiuto=NULL

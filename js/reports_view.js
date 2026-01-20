@@ -1,6 +1,6 @@
 'use strict';
 
-const API_REPORTS = 'api/reports.php';
+const API_REPORTS = 'backend/reports.php';
 
 async function loadReports() {
   try {
@@ -11,10 +11,10 @@ async function loadReports() {
 
     const data = json.data;
     
-    // 1. Render Grafico Aule
+    
     renderChart(data.rooms);
 
-    // 2. Render Tabella Utenti
+    
     renderUsersTable(data.users);
 
   } catch (err) {
@@ -27,19 +27,17 @@ async function loadReports() {
 function renderChart(roomsData) {
   const ctx = document.getElementById('roomsChart');
   
-  // Preparazione dati per Chart.js
-  // Estraiamo i nomi delle aule (Etichette) e i totali (Numeri)
   const labels = roomsData.map(r => r.nome);
   const counts = roomsData.map(r => r.totale);
 
   new Chart(ctx, {
-    type: 'bar', // Tipo di grafico: 'bar', 'pie', 'line', 'doughnut'
+    type: 'bar',
     data: {
       labels: labels,
       datasets: [{
         label: 'Numero Prenotazioni',
         data: counts,
-        backgroundColor: 'rgba(54, 162, 235, 0.6)', // Colore azzurro semi-trasparente
+        backgroundColor: 'rgba(54, 162, 235, 0.6)', 
         borderColor: 'rgba(54, 162, 235, 1)',
         borderWidth: 1,
         borderRadius: 5
@@ -52,12 +50,12 @@ function renderChart(roomsData) {
         y: {
           beginAtZero: true,
           ticks: {
-            stepSize: 1 // Evita numeri decimali sull'asse Y
+            stepSize: 1 
           }
         }
       },
       plugins: {
-        legend: { display: false } // Nasconde la legenda inutile per un solo dataset
+        legend: { display: false }
       }
     }
   });
@@ -72,7 +70,7 @@ function renderUsersTable(usersData) {
   }
 
   tbody.innerHTML = usersData.map((u, index) => {
-    // Icona medaglia per i primi 3
+    
     let icon = `<span class="badge bg-secondary rounded-pill">${index + 1}</span>`;
     if (index === 0) icon = '🥇';
     if (index === 1) icon = '🥈';
@@ -92,5 +90,5 @@ function renderUsersTable(usersData) {
   }).join('');
 }
 
-// Avvia
+
 document.addEventListener('DOMContentLoaded', loadReports);

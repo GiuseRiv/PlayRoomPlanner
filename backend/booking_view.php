@@ -24,7 +24,6 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($id <= 0) err('Parametro id mancante o non valido', 422);
 
 try {
-  // 1) Dettagli base prenotazione
   $st = $pdo->prepare("
     SELECT
       p.id_prenotazione,
@@ -45,7 +44,6 @@ try {
   $p = $st->fetch();
   if (!$p) err('Prenotazione non trovata', 404);
 
-  // 2) Autorizzazione
   $st = $pdo->prepare("
     SELECT 1
     FROM invito i
@@ -62,7 +60,7 @@ try {
     err('Non autorizzato a vedere i dettagli di questa prenotazione', 403);
   }
 
-  // 3) Dotazioni sala
+
   $st = $pdo->prepare("
     SELECT d.id_dotazione, d.nome
     FROM contiene c
@@ -73,11 +71,7 @@ try {
   $st->execute([(int)$p['id_sala']]);
   $dotazioni = $st->fetchAll();
 
-  // ------------------------------------------------------------------
-  // MODIFICHE QUI SOTTO: Aggiunto 'tecnico' negli array IN (...)
-  // ------------------------------------------------------------------
 
-  // 4) Stats inviti (Include anche i tecnici ora)
   $st = $pdo->prepare("
     SELECT
       COUNT(*) AS tot,
@@ -92,7 +86,7 @@ try {
   $st->execute([$id]);
   $stats = $st->fetch() ?: ['tot'=>0,'accettati'=>0,'pendenti'=>0,'rifiutati'=>0];
 
-  // 5) Breakdown per ruolo (Include anche i tecnici ora)
+
   $st = $pdo->prepare("
     SELECT
       u.ruolo,
@@ -110,7 +104,7 @@ try {
   $st->execute([$id]);
   $byRole = $st->fetchAll();
 
-  // 6) Lista invitati completa (Include anche i tecnici ora)
+ 
   $st = $pdo->prepare("
     SELECT
       u.id_iscritto,
@@ -131,23 +125,20 @@ try {
   $st->execute([$id]);
   $invitati = $st->fetchAll();
 
-  // --- LOGICA PRIVACY ---
-  // Se chi visualizza è un ALLIEVO, nascondiamo la lista dei nomi.
-  // I tecnici (e docenti) vedranno tutto, inclusi gli altri tecnici invitati.
+  
   $viewerRole = (string)($_SESSION['user_ruolo'] ?? '');
 
   if ($viewerRole === 'allievo') {
       $invitati = []; 
   }
-  // Solo l'organizzatore può vedere data_risposta e data_invio
+  
   if (!$isOrganizer && !empty($invitati)) {
      foreach ($invitati as &$inv) {
          unset($inv['data_risposta'], $inv['data_invio'], $inv['motivazione_rifiuto']);
      }
-     unset($inv); // buona pratica con riferimenti
+     unset($inv); 
   }
 
-  // ----------------------
 
   ok([
     'prenotazione' => $p,

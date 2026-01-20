@@ -1,8 +1,8 @@
-// JS/invites.js
-const API_LIST   = 'api/invites_list.php';
-const API_ACCEPT = 'api/invite_accept.php';
-const API_REJECT = 'api/invite_reject.php';
-const API_LEAVE  = 'api/invite_leave.php';
+
+const API_LIST   = 'backend/invites_list.php';
+const API_ACCEPT = 'backend/invite_accept.php';
+const API_REJECT = 'backend/invite_reject.php';
+const API_LEAVE  = 'backend/invite_leave.php';
 
 function esc(str) {
   return String(str ?? '').replace(/[&<>"']/g, m => ({
@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try { await loadInvites(); } catch (e) { showAlert('danger', e.message); }
   });
 
-  // Azioni sui bottoni in tabella
+  // Bottoni in tabella
   document.getElementById('invitesTbody').addEventListener('click', async (e) => {
     const btn = e.target.closest('button[data-action]');
     if (!btn) return;

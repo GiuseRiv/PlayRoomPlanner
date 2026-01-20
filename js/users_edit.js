@@ -1,9 +1,9 @@
 'use strict';
 
 const userId = new URLSearchParams(window.location.search).get('id');
-const API_USER = `api/users_admin.php?id=${userId}`; 
-const API_SECTORS_INFO = 'api/users_admin.php?info_settori=1'; 
-const API_SAVE = `api/users_admin.php?id=${userId}`;
+const API_USER = `backend/users_admin.php?id=${userId}`; 
+const API_SECTORS_INFO = 'backend/users_admin.php?info_settori=1'; 
+const API_SAVE = `backend/users_admin.php?id=${userId}`;
 
 let allSectorsData = []; 
 let currentUserId = parseInt(userId);
@@ -20,17 +20,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const user = userJson.data;
         allSectorsData = sectorsJson.data || [];
 
-        // === 1. POPOLAMENTO COLONNA SINISTRA ===
+        
         document.getElementById('displayNomeCompleto').textContent = `${user.nome} ${user.cognome}`;
         
         const badge = document.getElementById('displayRuoloBadge');
         badge.className = `badge ${user.ruolo === 'docente' ? 'bg-primary' : (user.ruolo === 'tecnico' ? 'bg-dark' : 'bg-secondary')}`;
         badge.textContent = (user.ruolo || '').toUpperCase();
 
-        // NUOVO: SEGNALAZIONE RESPONSABILE SINISTRA
+        
         const displayResp = document.getElementById('displayResponsabilita');
         if (user.is_responsabile && user.responsabile_id_settore) {
-            // Cerchiamo il nome del settore nella lista scaricata
+            
             const nomeSettore = allSectorsData.find(s => s.id_settore == user.responsabile_id_settore)?.nome || 'Sconosciuto';
             
             displayResp.innerHTML = `
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('displayId').textContent = '#' + String(user.id_iscritto).padStart(5,'0');
 
         const img = document.getElementById('displayFoto');
-        img.src = (user.foto && user.foto !== 'default.png') ? `uploads/${user.foto}` : 'images/default.png';
+        img.src = (user.foto && user.foto !== 'default.png') ? `Images/${user.foto}` : 'Images/default.png';
 
         const displaySettori = document.getElementById('displaySettori');
         if (user.settori_nomi) {
@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             displaySettori.textContent = 'Nessun settore assegnato';
         }
 
-        // Calcolo Anni (Sinistra)
+        
         if (user.data_nomina) {
             const startYear = new Date(user.data_nomina).getFullYear();
             const currentYear = new Date().getFullYear();
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('displayDataIncarico').textContent = '-';
         }
 
-        // === 2. POPOLAMENTO MENU (Destra) ===
+        
         const roleSelect = document.getElementById('fieldRuolo');
         const sectorsSelect = document.getElementById('fieldSettori');
         const respSectorSelect = document.getElementById('selectSettoreResp');
@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // === 3. GESTIONE INTERFACCIA ===
+        
         const respCheckbox = document.getElementById('checkResponsabile');
         const respContainer = document.getElementById('containerResponsabile');
         const msgTecnico = document.getElementById('msgTecnico');
@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         updateUI();
 
-        // === SALVATAGGIO ===
+        
         document.getElementById('editForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             

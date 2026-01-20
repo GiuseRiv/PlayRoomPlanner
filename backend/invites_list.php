@@ -11,7 +11,7 @@ function err(string $m, int $code=400): void { http_response_code($code); echo j
 $uid = (int)$_SESSION['user_id'];
 
 try {
-  // Lista inviti dal giorno corrente in poi, ordinati per data/ora (requisito)
+  
   $stmt = $pdo->prepare("
     SELECT
       p.id_prenotazione,

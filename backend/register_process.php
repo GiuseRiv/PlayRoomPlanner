@@ -17,7 +17,6 @@ $data_nascita = $_POST['data_nascita'] ?? '';
 
 $ruolo = 'allievo';
 
-// --- 1. VALIDAZIONE DATI PERSONALI ---
 if (strlen($nome) < 2 || strlen($cognome) < 2) {
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => 'Nome e Cognome devono avere almeno 2 caratteri.']);
@@ -42,7 +41,6 @@ if ($data_nascita) {
     exit;
 }
 
-// --- 2. VALIDAZIONE PASSWORD E EMAIL ---
 $hasUpper = preg_match('@[A-Z]@', $password);
 $hasSpecial = preg_match('@[^\w]@', $password);
 
@@ -59,11 +57,10 @@ if ($password !== $password_confirm) {
 }
 
 try {
-    // Controllo email esistente
     $check = $pdo->prepare("SELECT id_iscritto FROM Iscritto WHERE email = ?");
     $check->execute([$email]);
     if ($check->fetch()) {
-        http_response_code(409); // Conflict
+        http_response_code(409); 
         echo json_encode(['status' => 'error', 'message' => 'Email già registrata.']);
         exit;
     }
@@ -71,14 +68,14 @@ try {
     // Hash password
     $password_hashed = password_hash($password, PASSWORD_BCRYPT);
     
-    // Gestione Foto
+    
     $foto_name = 'default.png';
     if (isset($_FILES['foto']) && $_FILES['foto']['error'] === 0) {
-        $upload_dir = '../uploads/';
+        $upload_dir = '../Images/';
         if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
         
         $ext = pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION);
-        // Validazione estensione base
+        
         $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
         if (in_array(strtolower($ext), $allowed)) {
             $foto_name = uniqid('user_') . '.' . $ext;
@@ -86,7 +83,7 @@ try {
         }
     }
 
-    // Inserimento
+    
     $sql = "INSERT INTO Iscritto (nome, cognome, email, password, ruolo, data_nascita, foto) 
             VALUES (?, ?, ?, ?, ?, ?, ?)";
     $pdo->prepare($sql)->execute([$nome, $cognome, $email, $password_hashed, $ruolo, $data_nascita, $foto_name]);

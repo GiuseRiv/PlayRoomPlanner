@@ -25,9 +25,9 @@ $body = json_decode(file_get_contents('php://input'), true);
 if (!is_array($body)) err('JSON non valido', 422);
 
 $idPren          = (int)($body['id_prenotazione'] ?? 0);
-$mode            = (string)($body['mode'] ?? '');      // 'all' | 'sector' | 'role'
-$idSettore       = (int)($body['id_settore'] ?? 0);    // richiesto se mode='sector'
-$ruolo           = (string)($body['ruolo'] ?? '');     // richiesto se mode='role'
+$mode            = (string)($body['mode'] ?? '');      
+$idSettore       = (int)($body['id_settore'] ?? 0);    
+$ruolo           = (string)($body['ruolo'] ?? '');     
 $includeOrganizer = (bool)($body['include_organizer'] ?? false);
 
 if ($idPren <= 0) err('id_prenotazione mancante', 422);
@@ -36,7 +36,7 @@ if (!in_array($mode, ['all','sector','role'], true)) err('mode non valido', 422)
 try {
   $pdo->beginTransaction();
 
-  // 1) Verifica prenotazione + permesso (solo organizzatore può invitare)
+  
   $st = $pdo->prepare("
     SELECT p.id_prenotazione, p.id_organizzatore, p.id_sala, p.stato, s.capienza
     FROM Prenotazione p
@@ -52,14 +52,13 @@ try {
 
   $capienza = (int)$p['capienza'];
 
-  // 2) Conteggio già invitati (per eventuali politiche di limite inviti)
+  
   $st = $pdo->prepare("SELECT COUNT(*) AS n FROM invito WHERE id_prenotazione=?");
   $st->execute([$idPren]);
   $alreadyInvited = (int)$st->fetch()['n'];
 
-  // 3) Costruisci lista candidati in base alla modalità
+  
   if ($mode === 'all') {
-    // tutti gli iscritti, qualunque ruolo
     $sqlCand = "SELECT id_iscritto FROM Iscritto";
     $paramsCand = [];
 
@@ -73,14 +72,14 @@ try {
     ";
     $paramsCand = [$idSettore];
 
-  } else { // role
+  } else { 
     if ($ruolo === '') err('ruolo mancante', 422);
     $sqlCand = "SELECT id_iscritto FROM Iscritto WHERE ruolo = ?";
     $paramsCand = [$ruolo];
   }
  
   if (!$includeOrganizer) {
-    // Determina prefisso tabella in base a mode
+
     $tablePrefix = match($mode) {
         'sector' => 'a.',
         'role', 'all' => ''
@@ -101,7 +100,7 @@ try {
     ok(['inserted' => 0, 'skipped_existing' => 0, 'message' => 'Nessun candidato trovato']);
   }
 
-  // 4) Inserimento inviti: evita duplicati (PK composta id_iscritto,id_prenotazione)
+  
   $ins = $pdo->prepare("
     INSERT IGNORE INTO invito (id_iscritto, id_prenotazione, data_invio, stato)
     VALUES (?, ?, CURDATE(), 'pendente')
@@ -112,9 +111,6 @@ try {
 
   foreach ($candidates as $row) {
     $idIscritto = (int)$row['id_iscritto'];
-
-    // opzionale: non invitare oltre capienza (strict)
-    // if (($alreadyInvited + $inserted) >= $capienza) break;
 
     $ins->execute([$idIscritto, $idPren]);
     if ($ins->rowCount() > 0) $inserted++;
@@ -132,5 +128,5 @@ try {
 } catch (Exception $e) {
   if ($pdo->inTransaction()) $pdo->rollBack();
   error_log("inviti_create ERROR: " . $e->getMessage() . " | Line: " . $e->getLine() . " | JSON: " . file_get_contents('php://input'));
-  err('Errore server: ' . $e->getMessage(), 500);  // ← Mostra messaggio reale!
+  err('Errore server: ' . $e->getMessage(), 500);
 }

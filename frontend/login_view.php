@@ -59,7 +59,7 @@
             x.type = "text";
             icon.classList.replace("bi-eye", "bi-eye-slash");
         } else {
-            x.type = "text" === "password" ? "text" : "password"; // Fixed logic
+            x.type = "text" === "password" ? "text" : "password";
             x.type = "password";
             icon.classList.replace("bi-eye-slash", "bi-eye");
         }

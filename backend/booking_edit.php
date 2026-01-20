@@ -11,30 +11,30 @@ $method = $_SERVER['REQUEST_METHOD'];
 $userId = $_SESSION['user_id'];
 $userRole = $_SESSION['user_ruolo'] ?? '';
 
-// === GET: Carica dati per il form ===
+
 if ($method === 'GET') {
     $id = (int)($_GET['id'] ?? 0);
     if ($id <= 0) err('ID mancante');
 
-    // 1. Recupera Prenotazione
+    
     $stmt = $pdo->prepare("SELECT * FROM Prenotazione WHERE id_prenotazione = ?");
     $stmt->execute([$id]);
     $booking = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$booking) err('Prenotazione non trovata', 404);
 
-    // Controllo permessi: Solo Tecnico o Organizzatore
+    //Solo Tecnico o Organizzatore
     if ($userRole !== 'tecnico' && $booking['id_organizzatore'] != $userId) {
         err('Non hai i permessi per modificare questa prenotazione', 403);
     }
 
-    // 2. Recupera Lista Sale (per la select)
+
     $sale = $pdo->query("SELECT id_sala, nome, capienza FROM Sala ORDER BY nome")->fetchAll(PDO::FETCH_ASSOC);
 
     ok(['booking' => $booking, 'sale' => $sale]);
 }
 
-// === POST: Salva Modifiche ===
+
 if ($method === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
     
@@ -47,7 +47,7 @@ if ($method === 'POST') {
 
     if ($id <= 0 || !$attivita || !$data || $idSala <= 0 || $durata <= 0) err('Dati incompleti');
 
-    // Controllo Permessi (di nuovo, per sicurezza)
+    
     $stmtCheck = $pdo->prepare("SELECT id_organizzatore FROM Prenotazione WHERE id_prenotazione = ?");
     $stmtCheck->execute([$id]);
     $orgId = $stmtCheck->fetchColumn();
@@ -55,8 +55,6 @@ if ($method === 'POST') {
     if (!$orgId) err('Prenotazione inesistente', 404);
     if ($userRole !== 'tecnico' && $orgId != $userId) err('Accesso negato', 403);
 
-    // --- CONTROLLO SOVRAPPOSIZIONI ---
-    // Importante: AND id_prenotazione != ? per escludere se stessi dal controllo
     $oraFine = $oraInizio + $durata;
 
     $sqlConflict = "
@@ -78,7 +76,6 @@ if ($method === 'POST') {
         err("La sala è già occupata in questo orario (conflitto con altre prenotazioni).");
     }
 
-    // UPDATE
     try {
         $upd = $pdo->prepare("
             UPDATE Prenotazione 

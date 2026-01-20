@@ -2,13 +2,11 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../common/config.php';
-require_once __DIR__ . '/../common/api_auth.php'; // Solo utenti loggati
+require_once __DIR__ . '/../common/api_auth.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
 try {
-    // 1. STATISTICHE AULE: Conta prenotazioni per aula
-    // CORREZIONE: Usiamo la tabella "Sala" come definita nel tuo SQL
     $sqlRooms = "
         SELECT s.nome, COUNT(p.id_prenotazione) as totale
         FROM Sala s
@@ -19,8 +17,6 @@ try {
     $stmtRooms = $pdo->query($sqlRooms);
     $statsRooms = $stmtRooms->fetchAll(PDO::FETCH_ASSOC);
 
-    // 2. TOP USERS: I 5 utenti con più prenotazioni
-    // Questo era già corretto (tabella Iscritto)
     $sqlUsers = "
         SELECT i.nome, i.cognome, COUNT(p.id_prenotazione) as totale
         FROM Iscritto i

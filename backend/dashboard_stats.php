@@ -22,9 +22,7 @@ $today = date('Y-m-d');
 $nowHour = (int)date('G');
 
 try {
-  // 1) INVITI PENDENTI
-  // CORREZIONE: Aggiunto "AND p.stato = 'confermata'"
-  // Conta solo se l'evento esiste ancora ed è confermato.
+  
   $stmt = $pdo->prepare("
     SELECT COUNT(*) AS n
     FROM invito i
@@ -37,7 +35,7 @@ try {
   $stmt->execute([$uid, $today]);
   $pending = (int)$stmt->fetchColumn();
 
-  // 2) Impegni Settimana
+
   $stmt = $pdo->prepare("
     SELECT COUNT(DISTINCT p.id_prenotazione)
     FROM Prenotazione p
@@ -50,7 +48,7 @@ try {
   $stmt->execute([$uid, $today, $uid]);
   $impegniSettimana = (int)$stmt->fetchColumn();
 
-  // 3) Prossimo impegno
+
   $stmt = $pdo->prepare("
     SELECT
       p.id_prenotazione, p.data, p.ora_inizio, p.durata_ore, p.attivita,

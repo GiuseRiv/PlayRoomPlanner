@@ -1,7 +1,7 @@
 <?php
-// frontend/invites.php
 declare(strict_types=1);
 ?>
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -81,7 +81,7 @@ declare(strict_types=1);
     </div>
 
   </div>
-
+  
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="JS/invites.js"></script>
 </body>

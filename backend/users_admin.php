@@ -11,13 +11,11 @@ function err($m,$c=400){ http_response_code($c); echo json_encode(['ok'=>false,'
 $method = $_SERVER['REQUEST_METHOD'];
 $ruoloSessione = $_SESSION['user_ruolo'] ?? '';
 
-// =================================================================================
-// 1. METODO GET
-// =================================================================================
+
 if ($method === 'GET') {
     if (!in_array($ruoloSessione, ['tecnico', 'docente'])) err('Accesso negato', 403);
 
-    // INFO SETTORI
+    
     if (isset($_GET['info_settori'])) {
         try {
             $sql = "SELECT s.id_settore, s.nome, s.id_responsabile, 
@@ -32,7 +30,7 @@ if ($method === 'GET') {
         }
     }
 
-    // LISTA UTENTI (Gestione Iscritti)
+    
     if (!isset($_GET['id'])) {
         try {
             $roleFilter = $_GET['role'] ?? '';
@@ -69,7 +67,7 @@ if ($method === 'GET') {
         }
     }
 
-    // SINGOLO UTENTE (Edit Profilo)
+    
     $id = (int)$_GET['id'];
     try {
         $sql = "
@@ -89,7 +87,7 @@ if ($method === 'GET') {
 
         if (!$user) err('Utente non trovato', 404);
 
-        // Recupero info Responsabile
+        
         $stmtResp = $pdo->prepare("SELECT id_settore, data_nomina, anni_servizio FROM Settore WHERE id_responsabile = ?");
         $stmtResp->execute([$id]);
         $respData = $stmtResp->fetch(PDO::FETCH_ASSOC);
@@ -98,7 +96,7 @@ if ($method === 'GET') {
             $user['is_responsabile'] = true;
             $user['responsabile_id_settore'] = $respData['id_settore'];
             $user['data_nomina'] = $respData['data_nomina'];
-            $user['anni_servizio'] = $respData['anni_servizio']; // Ora includiamo questo dato corretto
+            $user['anni_servizio'] = $respData['anni_servizio'];
         } else {
             $user['is_responsabile'] = false;
             $user['responsabile_id_settore'] = null;
@@ -112,9 +110,7 @@ if ($method === 'GET') {
     }
 }
 
-// =================================================================================
-// 2. METODO PUT
-// =================================================================================
+
 if ($method === 'PUT') {
     if ($ruoloSessione !== 'tecnico') err('Solo i tecnici possono modificare', 403);
 
@@ -132,7 +128,7 @@ if ($method === 'PUT') {
     try {
         $pdo->beginTransaction();
 
-        // 1. Aggiorna Ruolo e Pulisci Competenze
+        
         $pdo->prepare("UPDATE Iscritto SET ruolo = ? WHERE id_iscritto = ?")->execute([$nuovoRuolo, $id]);
         $pdo->prepare("DELETE FROM afferisce WHERE id_iscritto = ?")->execute([$id]);
         
@@ -153,19 +149,17 @@ if ($method === 'PUT') {
             foreach ($idsDaIns as $sid) $ins->execute([$id, $sid]);
         }
 
-        // 3. GESTIONE RESPONSABILE (LOGICA AGGIORNATA)
         
-        // A. Resetta responsabilità precedenti (lascia vacante)
         $pdo->prepare("UPDATE Settore SET id_responsabile = NULL, data_nomina = NULL WHERE id_responsabile = ?")
             ->execute([$id]);
 
-        // B. Nuova nomina
+        
         if ($nuovoRuolo === 'docente' && $diventaResponsabile && $idSettoreResp) {
-            // Libera il settore target da altri
+            
             $pdo->prepare("UPDATE Settore SET id_responsabile = NULL, data_nomina = NULL WHERE id_settore = ?")
                 ->execute([$idSettoreResp]);
 
-            // Assegna e RESETTA ANNI_SERVIZIO A 0 (Fix per il tuo problema)
+            
             $pdo->prepare("UPDATE Settore SET id_responsabile = ?, data_nomina = ?, anni_servizio = 0 WHERE id_settore = ?")
                 ->execute([$id, $dataOggi, $idSettoreResp]);
         }
@@ -179,9 +173,7 @@ if ($method === 'PUT') {
     }
 }
 
-// =================================================================================
-// 3. METODO DELETE
-// =================================================================================
+
 if ($method === 'DELETE') {
     if ($ruoloSessione !== 'tecnico') err('Solo i tecnici possono eliminare', 403);
     $id = (int)($_GET['id'] ?? 0);

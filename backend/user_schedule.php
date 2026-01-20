@@ -1,12 +1,12 @@
 <?php
-// Header + config
+
 require_once '../common/config.php';
 $pdo = $GLOBALS['pdo'];
 
 $userId = $_GET['userId'] ?? null;
 $day = $_GET['day'] ?? date('Y-m-d');
 
-// Stessa logica settimana
+
 $start = (new DateTime($day))->modify('monday this week')->format('Y-m-d 00:00:00');
 $end = (new DateTime($day))->modify('sunday this week')->format('Y-m-d 23:59:59');
 

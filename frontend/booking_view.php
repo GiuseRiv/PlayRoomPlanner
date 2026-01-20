@@ -21,7 +21,7 @@ if (!isset($_SESSION['user_id'])) { header("Location: index.php"); exit; }
   <input type="hidden" id="currentUserRole" value="<?php echo $_SESSION['user_ruolo'] ?? ''; ?>">
 
   <div class="mb-3 d-flex justify-content-between align-items-center">
-    <a href="index.php?page=dashboard" class="btn btn-outline-secondary">&larr; Dashboard</a>
+    <a href="index.php?page=dashboard" class="btn btn-outline-secondary">&larr; Torna alla Dashboard</a>
     
     <a href="index.php?page=booking_edit&id=<?php echo (int)($_GET['id'] ?? 0); ?>" 
        id="btnEditBooking" 

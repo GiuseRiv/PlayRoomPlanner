@@ -14,7 +14,7 @@ $day = $_GET['day'] ?? date('Y-m-d');
 if ($idSala <= 0) err('id_sala mancante');
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/',$day)) err('day invalido');
 
-// Lun-Dom ISO
+
 $d = new DateTime($day);
 $monday = $d->modify('monday this week')->format('Y-m-d');
 $sunday = (new DateTime($monday))->modify('sunday this week')->format('Y-m-d');
@@ -29,4 +29,4 @@ $stmt = $pdo->prepare("
 $stmt->execute([$idSala, $monday, $sunday]);
 $bookings = $stmt->fetchAll();
 
-ok(['bookings' => $bookings]);  // ← Struttura per rooms_week.js
+ok(['bookings' => $bookings]);  

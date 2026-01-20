@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . '/../common/config.php'; // sessione
+require_once __DIR__ . '/../common/config.php';
 ?>
 <!DOCTYPE html>
 <html lang="it">

@@ -67,7 +67,7 @@ async function loadWeek(day) {
   document.getElementById('weekTbody').innerHTML = '<tr><td colspan="8" class="text-center"><div class="spinner-border"></div></td></tr>';
   
   try {
-    const data = await apiGet(`api/user_week.php?day=${day}`);
+    const data = await apiGet(`backend/user_week.php?day=${day}`);
     allRows = data;
     applyFilters();
     
@@ -80,7 +80,7 @@ async function loadWeek(day) {
 }
 
 async function cancelBooking(id) {
-  const res = await fetch(`api/bookings.php?id=${id}`, { method: 'DELETE', credentials: 'same-origin' });
+  const res = await fetch(`backend/bookings.php?id=${id}`, { method: 'DELETE', credentials: 'same-origin' });
   const payload = await res.json();
   if (!res.ok || !payload.ok) throw new Error(payload.message || 'Errore');
   return payload.data;

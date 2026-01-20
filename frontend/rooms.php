@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . '/../common/config.php'; // sessione + $pdo
+require_once __DIR__ . '/../common/config.php';
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -19,11 +19,11 @@ require_once __DIR__ . '/../common/config.php'; // sessione + $pdo
     <div class="card shadow-sm border-0 mt-3">
       <div class="card-body">
 
-        <!-- Config: endpoints letti dal JS -->
+        
         <div id="roomsPage"
-             data-room-list-api="api/room_list.php"
-             data-room-week-api="api/room_week.php"
-             data-room-detail-api="api/room_detail.php"></div>
+             data-room-list-api="backend/room_list.php"
+             data-room-week-api="backend/room_week.php"
+             data-room-detail-api="backend/room_detail.php"></div>
 
         <form id="roomsWeekForm" class="row g-2" autocomplete="off">
           <div class="col-12 col-md-5">
@@ -47,7 +47,7 @@ require_once __DIR__ . '/../common/config.php'; // sessione + $pdo
 
         <div id="roomsAlert" class="alert alert-danger d-none" role="alert"></div>
 
-        <!-- Riga info sala (niente blocco laterale) -->
+        
 <div class="d-flex flex-wrap gap-3 align-items-center mb-2">
   <div class="small">
     <strong>Sala:</strong> <span id="infoSalaNome" class="text-muted">-</span>
@@ -63,7 +63,7 @@ require_once __DIR__ . '/../common/config.php'; // sessione + $pdo
   </div>
 </div>
 
-<!-- Solo tabella prenotazioni -->
+
         <div class="table-responsive">
           <table class="table table-sm align-middle mb-0">
             <thead>
@@ -85,7 +85,7 @@ require_once __DIR__ . '/../common/config.php'; // sessione + $pdo
     </div>
   </div>
 
-  <!-- JS esterno -->
+
   <script src="js/rooms_week.js"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@
 
 (function () {
   const BOOKING_ID = Number(window.BOOKING_ID || 0);
-  const API_URL = 'api/booking_view.php?id=' + encodeURIComponent(BOOKING_ID);
+  const API_URL = 'backend/booking_view.php?id=' + encodeURIComponent(BOOKING_ID);
 
   // Recupero dati utente corrente dall'HTML
   const currUserIdEl = document.getElementById('currentUserId');
@@ -11,9 +11,7 @@
   const currUserId = currUserIdEl ? parseInt(currUserIdEl.value) : 0;
   const currUserRole = currUserRoleEl ? currUserRoleEl.value : '';
 
-  // =============================================================
   // HELPERS
-  // =============================================================
   function esc(str) {
     return String(str ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   }
@@ -62,9 +60,8 @@
     return html;
   }
 
-  // =============================================================
   // MAIN LOAD FUNCTION
-  // =============================================================
+ 
   async function load() {
     if (!BOOKING_ID) {
       document.getElementById('loadingSpinner').classList.add('d-none');
@@ -82,9 +79,8 @@
         const p = data.prenotazione || {};
         const stats = data.inviti_stats || { tot:0, accettati:0, pendenti:0, rifiutati:0 };
 
-        // -------------------------------------------------------------
-        // 1. GESTIONE PERMESSI MODIFICA
-        // -------------------------------------------------------------
+        
+        //GESTIONE PERMESSI MODIFICA
         const idOrg = parseInt(p.id_organizzatore || 0);
         
         // Se Tecnico OPPURE Organizzatore -> Mostra bottone modifica
@@ -93,13 +89,12 @@
             if(btnEdit) btnEdit.classList.remove('d-none');
         }
 
-        // -------------------------------------------------------------
-        // 2. BARRA OCCUPAZIONE (CALCOLO CORRETTO)
-        // -------------------------------------------------------------
+       
+        //BARRA OCCUPAZIONE         
         const rawCap = p.capienza;
         const rawAcc = stats.accettati;
         
-        // Convertiamo in numeri sicuri
+        
         let maxCap = Number(rawCap);
         if (isNaN(maxCap) || maxCap <= 0) maxCap = 1; // Default a 1 per evitare errori grafici
         
@@ -108,11 +103,11 @@
 
         let percent = (currentOcc / maxCap) * 100;
         
-        // Limiti visivi (minimo 5% per farla vedere, massimo 100%)
+        //minimo 5% per farla vedere, massimo 100%
         if (currentOcc > 0 && percent < 5) percent = 5; 
         if (percent > 100) percent = 100;
 
-        // Applicazione al DOM
+        //Applicazione al DOM
         const bar = document.getElementById('occupancyBar');
         const fullBadge = document.getElementById('fullCapacityBadge');
         const textEl = document.getElementById('occupancyText');
@@ -135,9 +130,8 @@
         if (textEl) textEl.textContent = `${currentOcc} / ${maxCap}`;
 
 
-        // -------------------------------------------------------------
-        // 3. POPOLAMENTO CAMPI TESTUALI
-        // -------------------------------------------------------------
+        
+        //POPOLAMENTO CAMPI TESTUALI
         document.getElementById('headerTitle').textContent = p.attivita || 'Dettaglio';
         document.getElementById('attivita').textContent = p.attivita || '—';
         document.getElementById('statoBadge').innerHTML = badgeStato(p.stato);
@@ -150,17 +144,16 @@
         document.getElementById('settore').textContent = p.nome_settore || '-';
         document.getElementById('tipoSettore').textContent = p.tipo_settore ? `(${p.tipo_settore})` : '';
 
-        // Dotazioni
+        //Dotazioni
         const dots = Array.isArray(data.dotazioni) ? data.dotazioni : [];
         const dotsBox = document.getElementById('dotazioni');
         dotsBox.innerHTML = dots.length ? dots.map(d => `<span class="badge bg-info bg-opacity-10 text-dark border me-1 mb-1">${esc(d.nome)}</span>`).join('') : '<span class="text-muted fst-italic">Nessuna</span>';
 
-        // Stats Testo
+        //Stats
         document.getElementById('roleBreakdown').textContent = `Totale invitati: ${stats.tot} (✅ ${stats.accettati}, ⏳ ${stats.pendenti}, ❌ ${stats.rifiutati})`;
         
-        // -------------------------------------------------------------
-        // 4. TABELLA INVITATI
-        // -------------------------------------------------------------
+       
+        //TABELLA INVITATI
         const invitati = Array.isArray(data.invitati) ? data.invitati : [];
         const tbody = document.getElementById('invTbody');
         const tableContainer = document.getElementById('tableContainer');
@@ -181,7 +174,7 @@
            if(stats.tot > 0) hiddenMsg.classList.remove('d-none');
         }
 
-        // Mostra contenuto
+        //Mostra contenuto
         document.getElementById('loadingSpinner').classList.add('d-none');
         document.getElementById('mainContent').classList.remove('d-none');
 

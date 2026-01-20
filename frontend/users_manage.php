@@ -1,9 +1,8 @@
 <?php 
 declare(strict_types=1); 
-// Avvio sessione se non attiva
+
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-// Controllo sicurezza base: se non sei loggato, via
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;

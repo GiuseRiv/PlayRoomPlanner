@@ -1,7 +1,7 @@
-const API_ROOMS = 'api/rooms_bookable.php';
-const API_BOOKINGS = 'api/bookings.php';
-const API_INVITE_CREATE = 'api/invite_create.php';
-const API_ROOM_BUSY = 'api/room_day_busy.php';
+const API_ROOMS = 'backend/rooms_bookable.php';
+const API_BOOKINGS = 'backend/bookings.php';
+const API_INVITE_CREATE = 'backend/invite_create.php';
+const API_ROOM_BUSY = 'backend/room_day_busy.php';
 
 function esc(str) {
   return String(str ?? '').replace(/[&<>"']/g, m => ({
@@ -23,7 +23,7 @@ async function apiGet(url) {
   const res = await fetch(url, { credentials: 'same-origin' }); // cookie sessione [web:137]
   const payload = await res.json().catch(() => ({}));
   if (!res.ok || payload.ok !== true) throw new Error(payload.message || 'Errore');
-  return payload.data ?? payload; // tollerante
+  return payload.data ?? payload; 
 }
 
 async function apiPost(url, bodyObj) {
@@ -157,7 +157,7 @@ async function refreshBusyUI() {
   const dateStr = dateInputEl.value;
 
   if (!Number.isFinite(idSala) || idSala <= 0 || !dateStr) {
-    // rigenera comunque ore base per giorno
+    
     fillStartHoursForDay(dateStr || todayISO());
     fillDurations('');
     durSelectEl.value = '';
@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     durSelect.value = '';
   });
 
-  // 1) carica sale prenotabili
+  
   try {
     const data = await apiGet(API_ROOMS);
     const rooms = data.rooms || [];
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       fillRooms(rooms);
       fillSectorsFromRooms(rooms);
 
-      // seleziona prima sala automaticamente per evitare id_sala vuoto/NaN
+      // seleziona prima sala automaticamente per evitare id_sala vuoto
       roomSelectEl.value = String(rooms[0].id_sala);
 
       await refreshBusyUI();
@@ -241,10 +241,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('roomSelect').innerHTML = `<option value="">Errore caricamento sale</option>`;
   }
 
-  // listeners che dipendono dal DOM già pronto
+  
   document.getElementById('roomSelect').addEventListener('change', refreshBusyUI);
 
-  // 2) submit: crea prenotazione -> (opzionale) crea inviti
+  
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 

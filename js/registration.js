@@ -1,11 +1,11 @@
 $(document).ready(function() {
     
-    // --- VALIDAZIONE LIVE (MENTRE SCRIVI) ---
+    
     const $pwd = $('#regPassword');
     const $pwdConf = $('#regPasswordConfirm');
     const $rulesBox = $('#passwordRules');
 
-    // Funzione helper per aggiornare la UI della checklist
+    
     function updateReq(id, isValid) {
         const $el = $(id);
         const $icon = $el.find('i');
@@ -19,23 +19,23 @@ $(document).ready(function() {
         return isValid;
     }
 
-    // Evento INPUT su entrambi i campi password
+    
     $('#regPassword, #regPasswordConfirm').on('input focus', function() {
-        $rulesBox.removeClass('d-none'); // Mostra la checklist quando inizi a scrivere
+        $rulesBox.removeClass('d-none'); // Checklist quando si scrive
         
         const val = $pwd.val();
         const conf = $pwdConf.val();
 
-        // 1. Controllo Lunghezza
+        //Controllo Lunghezza
         updateReq('#req-length', val.length >= 8);
         
-        // 2. Controllo Maiuscola
+        //Controllo Maiuscola
         updateReq('#req-upper', /[A-Z]/.test(val));
 
-        // 3. Controllo Speciale
+        //Controllo Speciale
         updateReq('#req-special', /[!@#$%^&*(),.?":{}|<>]/.test(val));
 
-        // 4. Controllo Coincidenza (solo se conferma non è vuota)
+        //Controllo Coincidenza
         if(conf.length > 0) {
             updateReq('#req-match', val === conf);
         } else {
@@ -43,17 +43,17 @@ $(document).ready(function() {
         }
     });
 
-    // --- VALIDAZIONE AL SUBMIT (FINALE) ---
+    
     $('#registrationForm').on('submit', function(e) {
         e.preventDefault();
         
-        // Reset errori precedenti
+        
         $('.form-control').removeClass('is-invalid');
         $('#globalFeedback').empty();
 
         let isValid = true;
 
-        // 1. Validazione Nome/Cognome
+        
         if ($('#fieldNome').val().trim().length < 2) {
             $('#fieldNome').addClass('is-invalid');
             isValid = false;
@@ -63,7 +63,7 @@ $(document).ready(function() {
             isValid = false;
         }
 
-        // 2. Validazione Data
+        
         const dataVal = $('#regDataNascita').val();
         if (dataVal) {
             if (new Date(dataVal) > new Date()) {
@@ -75,14 +75,14 @@ $(document).ready(function() {
             isValid = false;
         }
 
-        // 3. Validazione Password Completa
+        
         const p1 = $pwd.val();
         const p2 = $pwdConf.val();
         const hasUpper = /[A-Z]/.test(p1);
         const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(p1);
 
         if (p1.length < 8 || !hasUpper || !hasSpecial) {
-            $('#regPassword').addClass('is-invalid'); // Questo fa apparire il box rosso sotto
+            $('#regPassword').addClass('is-invalid'); 
             isValid = false;
         }
 
@@ -92,11 +92,10 @@ $(document).ready(function() {
         }
 
         if (!isValid) {
-            // Scrolla al primo errore se necessario, ma di solito è tutto visibile
             return; 
         }
 
-        // --- INVIO AJAX ---
+        
         let formData = new FormData(this);
         const $btn = $('#btnRegister');
         $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Attendere...');
@@ -120,7 +119,7 @@ $(document).ready(function() {
                     msg = res.message;
                 } catch(e){}
                 
-                // Mostra errore globale in alto (box rosso standard)
+                
                 $('#globalFeedback').html(`<div class="alert alert-danger shadow-sm"><i class="bi bi-exclamation-triangle-fill me-2"></i>${msg}</div>`);
                 window.scrollTo(0, 0);
             }

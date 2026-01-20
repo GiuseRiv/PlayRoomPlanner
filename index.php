@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . '/common/config.php'; // avvia sessione + PDO
+require_once __DIR__ . '/common/config.php'; 
 $page = $_GET['page'] ?? 'dashboard';
 
-// pagine pubbliche
+
 $publicPages = ['login', 'registrazione'];
 
-// guard session
+
 if (!isset($_SESSION['user_id']) && !in_array($page, $publicPages, true)) {
     header('Location: index.php?page=login');
     exit;
@@ -18,7 +18,7 @@ $routes = [
     'dashboard'     => __DIR__ . '/frontend/dashboard.php',
     'logout'        => __DIR__ . '/backend/logout.php',
 
-    // pagine collegate dalla dashboard
+    
     'profile'       => __DIR__ . '/frontend/profile.php',
     'invites'       => __DIR__ . '/frontend/invites.php',
     'my_week'       => __DIR__ . '/frontend/my_week.php',
@@ -29,8 +29,7 @@ $routes = [
     'users_edit'    => __DIR__ . '/frontend/users_edit.php',
     'booking_view'  => __DIR__ . '/frontend/booking_view.php',
     'booking_edit'  => __DIR__ . '/frontend/booking_edit.php',
-    // (opzionale) futuro: gestione iscritti tecnico
-    // 'users_manage'  => __DIR__ . '/frontend/users_manage.php',
+    
 ];
 
 if (!isset($routes[$page])) {

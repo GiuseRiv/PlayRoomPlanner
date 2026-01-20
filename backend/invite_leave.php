@@ -1,5 +1,5 @@
 <?php
-// VINCOLI APPLICATI: motivazione obbligatoria
+
 declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
@@ -13,23 +13,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') err('Metodo non supportato', 405);
 
 $body = json_decode(file_get_contents('php://input'), true);
 $idPren = (int)($body['id_prenotazione'] ?? 0);
-$mot = trim((string)($body['motivazione_rifiuto'] ?? ''));
-
 if ($idPren <= 0) err('id_prenotazione mancante', 422);
-if ($mot === '') err('Motivazione obbligatoria', 422);
 
 $uid = (int)$_SESSION['user_id'];
 
 try {
   $stmt = $pdo->prepare("
     UPDATE invito
-    SET stato='rifiutato', data_risposta=NOW(), motivazione_rifiuto=?
-    WHERE id_iscritto=? AND id_prenotazione=?
+    SET stato='pendente', data_risposta=NOW()
+    WHERE id_iscritto=? AND id_prenotazione=? AND stato='accettato'
   ");
-  $stmt->execute([$mot, $uid, $idPren]);
+  $stmt->execute([$uid, $idPren]);
 
-  if ($stmt->rowCount() === 0) err('Invito non trovato', 404);
-  ok(['message'=>'Rifiutato']);
+  if ($stmt->rowCount() === 0) err('Nessuna disponibilità da rimuovere (invito non accettato?)', 409);
+  ok(['message'=>'Rimosso']);
 } catch (Exception $e) {
   err('Errore server', 500);
 }

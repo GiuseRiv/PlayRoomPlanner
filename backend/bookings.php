@@ -24,7 +24,7 @@ function is_tecnico(): bool {
 /**
  * Permessi:
  * - Tecnico: può prenotare qualunque sala
- * - Responsabile: deve essere responsabile di almeno un settore
+ * - Responsabile: deve essere responsabile di un settore
  */
 function require_can_manage_bookings(PDO $pdo, int $uid): void {
   if (is_tecnico()) return;
@@ -42,11 +42,6 @@ function validate_slot(int $ora, int $dur): void {
   if ($ora + $dur > 23) err('La prenotazione deve terminare entro le 23', 422);
 }
 
-/**
- * Blocco prenotazioni nel passato:
- * - data < oggi => NO
- * - data == oggi e ora_inizio <= ora attuale => NO (prenotabile dalla prossima ora)
- */
 function validate_not_in_past(string $date, int $ora): void {
   $d = DateTimeImmutable::createFromFormat('Y-m-d', $date);
   if (!$d) err('Data non valida (formato atteso YYYY-MM-DD)', 422);
@@ -190,7 +185,7 @@ try {
     $p = $st->fetch();
     if (!$p) err('Prenotazione non trovata', 404);
 
-    // permesso: solo organizzatore (anche per tecnico)
+    // permesso: solo organizzatore (anche tecnico)
     if ((int)$p['id_organizzatore'] !== $uid) err('Non autorizzato', 403);
 
     $idSala = (int)($data['id_sala'] ?? $p['id_sala']);
@@ -227,7 +222,6 @@ try {
     $p = $st->fetch();
     if (!$p) err('Prenotazione non trovata', 404);
 
-    // permesso: solo organizzatore (anche per tecnico)
     if ((int)$p['id_organizzatore'] !== $uid) err('Non autorizzato', 403);
 
     $st = $pdo->prepare("UPDATE Prenotazione SET stato='annullata' WHERE id_prenotazione=?");

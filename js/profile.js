@@ -1,12 +1,5 @@
 'use strict';
 
-/**
- * ============================================================================
- * PLAY ROOM PLANNER - GESTIONE PROFILO UTENTE
- * ============================================================================
- */
-
-// --- FUNZIONI UTILITY DI BASE ---
 function setValue(id, val) {
     const el = document.getElementById(id);
     if (el) el.value = val || '';
@@ -17,51 +10,44 @@ function setText(id, val) {
     if (el) el.textContent = val || '';
 }
 
-// --- INIZIALIZZAZIONE ---
 document.addEventListener('DOMContentLoaded', () => {
     
-    // 1. Verifica presenza ID Utente (Sicurezza base frontend)
+    //Verifica presenza ID Utente
     const userIdInput = document.getElementById('currentUserId');
     if (!userIdInput) return; 
     const userId = userIdInput.value;
 
-    // 2. Avvio Moduli
+    
     loadProfile(userId);        // Carica dati iniziali
     initProfileForm(userId);    // Gestione Anagrafica (Nome/Cognome)
     initPhotoUpload(userId);    // Gestione Foto
     initPasswordForm(userId);   // Gestione Password Sicura
 });
 
-/**
- * ----------------------------------------------------------------------------
- * 1. CARICAMENTO DATI PROFILO (GET)
- * Recupera i dati dal server e popola i campi, inclusa la logica "Responsabile".
- * ----------------------------------------------------------------------------
- */
 async function loadProfile(userId) {
     try {
-        const res = await fetch(`api/users.php?id=${userId}`);
+        const res = await fetch(`backend/users.php?id=${userId}`);
         const payload = await res.json();
         
         if (!res.ok || !payload.ok) throw new Error(payload.message || 'Errore nel caricamento dati');
 
         const user = payload.data;
 
-        // A. Header e Info Rapide
+        
         setText('displayNome', `${user.nome} ${user.cognome}`);
         const ruoloCap = user.ruolo ? user.ruolo.charAt(0).toUpperCase() + user.ruolo.slice(1) : '';
         setText('displayRuolo', ruoloCap);
 
-        // B. Immagine Profilo (con Cache Busting)
+        
         const imgEl = document.getElementById('profilePreview');
         if (imgEl) {
             const fotoPath = (user.foto && user.foto !== 'default.png') 
-                             ? `uploads/${user.foto}` : 'images/default.png';
-            // Aggiungiamo timestamp per forzare il refresh dell'immagine
+                             ? `Images/${user.foto}` : 'Images/default.png';
+            
             imgEl.src = `${fotoPath}?t=${Date.now()}`;
         }
 
-        // C. Campi Anagrafica Form
+        
         const matInput = document.getElementById('fieldMatricola');
         if (matInput) matInput.value = String(user.id_iscritto).padStart(5, '0');
 
@@ -73,15 +59,13 @@ async function loadProfile(userId) {
         const dateInput = document.getElementById('fieldDataNascita');
         if (dateInput && user.data_nascita) dateInput.value = user.data_nascita;
 
-        // D. Sezione Responsabile di Settore (Logica Condizionale)
+        
         const respSection = document.getElementById('respSection');
         
         if (user.nome_settore_resp) {
             if (respSection) respSection.classList.remove('d-none');
             setText('respSettoreNome', user.nome_settore_resp);
             
-            // --- MODIFICA: CALCOLO DINAMICO ANNI ---
-            // Invece di usare user.anni_servizio diretto, calcoliamo dalla data
             let testoAnni = '-';
             if (user.data_nomina) {
                 const startYear = new Date(user.data_nomina).getFullYear();
@@ -99,10 +83,9 @@ async function loadProfile(userId) {
             
             setValue('respAnni', testoAnni);
             setValue('respData', user.data_nomina);
-            // ---------------------------------------
+            
 
         } else {
-            // Nascondi se non è responsabile
             if (respSection) respSection.classList.add('d-none');
         }
 
@@ -111,12 +94,6 @@ async function loadProfile(userId) {
     }
 }
 
-/**
- * ----------------------------------------------------------------------------
- * 2. AGGIORNAMENTO ANAGRAFICA (PUT)
- * Modifica solo Nome e Cognome.
- * ----------------------------------------------------------------------------
- */
 function initProfileForm(userId) {
     const form = document.getElementById('profileForm');
     if (!form) return;
@@ -136,7 +113,7 @@ function initProfileForm(userId) {
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Salvataggio...';
 
         try {
-            const res = await fetch(`api/users.php?id=${userId}`, {
+            const res = await fetch(`backend/users.php?id=${userId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataToSend)
@@ -158,12 +135,6 @@ function initProfileForm(userId) {
     });
 }
 
-/**
- * ----------------------------------------------------------------------------
- * 3. UPLOAD FOTO (POST Multipart)
- * Caricamento immediato al cambio file (evento change).
- * ----------------------------------------------------------------------------
- */
 function initPhotoUpload(userId) {
     const input = document.getElementById('uploadFoto');
     if (!input) return;
@@ -178,14 +149,14 @@ function initPhotoUpload(userId) {
             if(imgEl) imgEl.style.opacity = '0.5';
 
             try {
-                const res = await fetch(`api/users.php?id=${userId}`, {
+                const res = await fetch(`backend/users.php?id=${userId}`, {
                     method: 'POST',
-                    body: formData // FormData imposta automaticamente l'header corretto
+                    body: formData
                 });
                 const result = await res.json();
                 
                 if (result.ok) {
-                    loadProfile(userId); // Ricarica l'immagine ufficiale
+                    loadProfile(userId);
                     alert('Foto aggiornata con successo!');
                 } else {
                     alert('Errore upload: ' + result.message);
@@ -194,18 +165,12 @@ function initPhotoUpload(userId) {
                 alert('Errore di connessione durante l\'upload.');
             } finally {
                 if(imgEl) imgEl.style.opacity = '1';
-                this.value = ''; // Reset input per permettere ricaricamento stesso file
+                this.value = '';
             }
         }
     });
 }
 
-/**
- * ----------------------------------------------------------------------------
- * 4. CAMBIO PASSWORD SICURO (PUT)
- * Verifica vecchia password -> Controlla Requisiti -> Aggiorna
- * ----------------------------------------------------------------------------
- */
 function initPasswordForm(userId) {
     const form = document.getElementById('passwordForm');
     const newPassInput = document.getElementById('newPass');
@@ -213,10 +178,10 @@ function initPasswordForm(userId) {
     const oldPassInput = document.getElementById('oldPass');
     const rulesBox = document.getElementById('passwordRules');
 
-    // Controllo esistenza elementi
+    
     if (!form || !newPassInput || !confPassInput || !oldPassInput) return;
 
-    // --- A. Helper Visuale Requisiti ---
+    
     function updateReq(selector, isValid) {
         const el = document.querySelector(selector);
         if (!el) return;
@@ -233,7 +198,7 @@ function initPasswordForm(userId) {
         }
     }
 
-    // --- B. Validazione LIVE (mentre scrivi) ---
+    
     function checkRules() {
         if (rulesBox) rulesBox.classList.remove('d-none');
         
@@ -248,7 +213,7 @@ function initPasswordForm(userId) {
         if (conf.length > 0) {
             updateReq('#req-match', val === conf);
         } else {
-            // Reset visivo se campo conferma vuoto
+            
             const matchEl = document.querySelector('#req-match');
             if (matchEl) {
                 matchEl.classList.remove('text-success', 'fw-bold');
@@ -258,20 +223,20 @@ function initPasswordForm(userId) {
         }
     }
 
-    // Event Listeners Input
+    
     newPassInput.addEventListener('input', checkRules);
     newPassInput.addEventListener('focus', checkRules);
     confPassInput.addEventListener('input', checkRules);
 
-    // --- C. Invio Modulo (SUBMIT) ---
+    
     form.addEventListener('submit', async (e) => {
-        e.preventDefault(); // Blocca ricaricamento pagina
+        e.preventDefault();
         
         const oldP = oldPassInput.value;
         const newP = newPassInput.value;
         const confP = confPassInput.value;
 
-        // 1. Validazione Client
+        
         const hasUpper = /[A-Z]/.test(newP);
         const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(newP);
 
@@ -280,7 +245,7 @@ function initPasswordForm(userId) {
             return;
         }
 
-        // 2. Feedback UI
+        
         const btn = document.getElementById('btnSavePass');
         const originalText = btn.textContent;
         btn.disabled = true;
@@ -292,19 +257,19 @@ function initPasswordForm(userId) {
         };
 
         try {
-            // 3. Chiamata al Server (Verifica Hash DB e Aggiornamento)
-            const res = await fetch(`api/users.php?id=${userId}`, {
+            
+            const res = await fetch(`backend/users.php?id=${userId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataToSend)
             });
             const result = await res.json();
 
-            // 4. Gestione Risultato
+            
             if (res.ok && result.ok) {
                 alert('Password aggiornata con successo!');
                 
-                // Reset Form e UI
+                
                 form.reset(); 
                 if(rulesBox) rulesBox.classList.add('d-none');
                 document.querySelectorAll('.req-item').forEach(el => {
@@ -314,7 +279,7 @@ function initPasswordForm(userId) {
                 });
 
             } else {
-                // Errore dal server (es: Vecchia password errata)
+               
                 alert('Errore: ' + (result.message || 'La password attuale non è corretta.'));
             }
         } catch (err) { 

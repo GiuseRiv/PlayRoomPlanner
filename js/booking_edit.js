@@ -1,20 +1,20 @@
 'use strict';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Riferimenti DOM
+    
     const bookingIdInput = document.getElementById('bookingId');
     const alertBox = document.getElementById('alertBox');
     const form = document.getElementById('editForm');
     const salaSelect = document.getElementById('fieldSala');
 
-    // Controllo ID
+    
     if (!bookingIdInput || !bookingIdInput.value || bookingIdInput.value === '0') {
         showAlert('danger', 'ID prenotazione mancante.');
         return;
     }
     const bookingId = bookingIdInput.value;
 
-    // Helper per mostrare messaggi
+    
     function showAlert(type, msg) {
         if(alertBox) {
             alertBox.innerHTML = `
@@ -27,10 +27,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // 1. CARICAMENTO DATI (GET)
-    // Recupera i dettagli della prenotazione e la lista delle sale
     try {
-        const res = await fetch(`api/booking_edit.php?id=${bookingId}`);
+        const res = await fetch(`backend/booking_edit.php?id=${bookingId}`);
         const json = await res.json();
         
         if(!res.ok || !json.ok) {
@@ -40,12 +38,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const b = json.data.booking;
         const sale = json.data.sale;
 
-        // Popola la select delle sale
+        
         salaSelect.innerHTML = sale.map(s => 
             `<option value="${s.id_sala}">${s.nome} (Cap: ${s.capienza})</option>`
         ).join('');
 
-        // Pre-compila i campi del form con i dati esistenti
+        
         document.getElementById('fieldAttivita').value = b.attivita;
         document.getElementById('fieldData').value = b.data;
         document.getElementById('fieldOra').value = b.ora_inizio;
@@ -55,23 +53,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch(err) {
         console.error(err);
         showAlert('danger', err.message);
-        // Disabilita il tasto salva se c'è un errore critico nel caricamento
+        
         const btn = form.querySelector('button[type="submit"]');
         if(btn) btn.disabled = true;
     }
 
-    // 2. SALVATAGGIO MODIFICHE (POST)
+   
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // UI Feedback (spinner e disabilitazione tasto)
+        
         const btn = form.querySelector('button[type="submit"]');
         const oldText = btn.textContent;
         btn.disabled = true; 
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Salvataggio...';
-        alertBox.innerHTML = ''; // Pulisci vecchi errori
+        alertBox.innerHTML = ''; 
 
-        // Preparazione dati
+        
         const payload = {
             id_prenotazione: bookingId,
             attivita: document.getElementById('fieldAttivita').value,
@@ -82,7 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         try {
-            const res = await fetch('api/booking_edit.php', {
+            const res = await fetch('backend/booking_edit.php', {
                 method: 'POST',
                 headers: {'Content-Type':'application/json'},
                 body: JSON.stringify(payload)
@@ -91,9 +89,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if(!json.ok) throw new Error(json.message);
 
-            // Successo
+           
             alert('Prenotazione modificata con successo!');
-            // Reindirizza alla pagina di dettaglio
+            
             window.location.href = `index.php?page=booking_view&id=${bookingId}`;
 
         } catch(err) {

@@ -40,7 +40,7 @@ try {
     ok(['rooms' => $st->fetchAll()]);
   }
 
-  // non tecnico: solo sale prenotabili (responsabile settore sala OR stesso tipo settore)
+  // non tecnico: solo sale prenotabili
   $sql = "
     SELECT DISTINCT
       s.id_sala,

@@ -1,8 +1,8 @@
 (function () {
   const pageNode = document.getElementById('roomsPage');
-  const ROOMS_API  = pageNode?.dataset?.roomListApi   || 'api/room_list.php';
-  const WEEK_API   = pageNode?.dataset?.roomWeekApi   || 'api/room_week.php';
-  const DETAIL_API = pageNode?.dataset?.roomDetailApi || 'api/room_detail.php';
+  const ROOMS_API  = pageNode?.dataset?.roomListApi   || 'backend/room_list.php';
+  const WEEK_API   = pageNode?.dataset?.roomWeekApi   || 'backend/room_week.php';
+  const DETAIL_API = pageNode?.dataset?.roomDetailApi || 'backend/room_detail.php';
 
   const roomSelect = document.getElementById('roomSelect');
   const dayInput   = document.getElementById('day');
@@ -190,10 +190,8 @@
   // quando cambio sala: aggiorno dettaglio/dotazioni
   roomSelect.addEventListener('change', () => {
     loadRoomDetail();
-    // opzionale: se vuoi auto-refresh della tabella quando cambi sala
-    // if (dayInput.value) loadWeekBookings();
-  });
+    });
 
-  // boot
+
   loadRoomsIntoSelect();
 })();

@@ -1,13 +1,13 @@
 (function () {
   'use strict';
 
-  // --- DOM + endpoints ---
+  
   const pageNode = document.getElementById('roomsPage');
   if (!pageNode) return;
 
-  const ROOMS_API  = pageNode.dataset.roomListApi   || 'api/room_list.php';
-  const WEEK_API   = pageNode.dataset.roomWeekApi   || 'api/room_week.php';
-  const DETAIL_API = pageNode.dataset.roomDetailApi || 'api/room_detail.php';
+  const ROOMS_API  = pageNode.dataset.roomListApi   || 'backend/room_list.php';
+  const WEEK_API   = pageNode.dataset.roomWeekApi   || 'backend/room_week.php';
+  const DETAIL_API = pageNode.dataset.roomDetailApi || 'backend/room_detail.php';
 
   const roomSelect = document.getElementById('roomSelect');
   const dayInput   = document.getElementById('day');
@@ -16,7 +16,7 @@
   const alertBox   = document.getElementById('roomsAlert');
   const tbody      = document.getElementById('bookingsTbody');
 
-  // Nuovi campi "in linea"
+  
   const infoSalaNome      = document.getElementById('infoSalaNome');
   const infoSalaSettore   = document.getElementById('infoSalaSettore');
   const infoSalaCapienza  = document.getElementById('infoSalaCapienza');
@@ -26,11 +26,11 @@
     !roomSelect || !dayInput || !form || !alertBox || !tbody ||
     !infoSalaNome || !infoSalaSettore || !infoSalaCapienza || !infoSalaDotazioni
   ) {
-    // ids HTML non coerenti con lo script
+    
     return;
   }
 
-  // --- UI helpers ---
+  
   function showError(msg) {
     alertBox.textContent = msg || 'Errore imprevisto';
     alertBox.classList.remove('d-none');
@@ -78,7 +78,7 @@
     tbody.innerHTML = `<tr><td colspan="4" class="text-muted">${escapeHtml(msg)}</td></tr>`;
   }
 
-  // --- fetch helpers ---
+  
   async function fetchJson(url) {
     const res = await fetch(url, { credentials: 'same-origin' });
 
@@ -96,7 +96,7 @@
     return json;
   }
 
-  // --- 1) Carica sale in select ---
+  
   async function loadRoomsIntoSelect() {
     clearError();
     roomSelect.innerHTML = `<option value="">Caricamento sale…</option>`;
@@ -129,7 +129,7 @@
     }
   }
 
-  // --- 2) Dettaglio sala + dotazioni (in linea) ---
+  
   async function loadRoomDetail() {
     clearError();
 
@@ -168,7 +168,7 @@
     }
   }
 
-  // --- 3) Prenotazioni settimanali per sala ---
+  
   async function loadWeekBookings() {
     clearError();
 
@@ -224,7 +224,7 @@
     }
   }
 
-  // --- init ---
+  
   dayInput.valueAsDate = new Date();
   setRoomDetailEmpty();
 
@@ -235,9 +235,6 @@
 
   roomSelect.addEventListener('change', () => {
     loadRoomDetail();
-    // opzionale: auto-refresh prenotazioni quando cambi sala
-    // if (dayInput.value) loadWeekBookings();
-  });
-
+    });
   loadRoomsIntoSelect();
 })();

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../common/config.php'; // deve definire $pdo (PDO) e avviare sessione
+require_once __DIR__ . '/../common/config.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -12,7 +12,7 @@ function json_error(int $status, string $message): void {
 }
 
 if (!isset($_SESSION['user_id'])) {
-    // se nel tuo progetto usi un nome diverso, allinea qui
+   
     json_error(401, 'Non autorizzato');
 }
 
@@ -22,7 +22,7 @@ if ($idSala <= 0) {
 }
 
 try {
-    // 1) Dettagli sala + settore
+    
     $stmt = $pdo->prepare(
         "SELECT s.id_sala,
                 s.nome AS nome_sala,
@@ -41,7 +41,7 @@ try {
         json_error(404, 'Sala non trovata');
     }
 
-    // 2) Dotazioni
+  
     $stmt2 = $pdo->prepare(
         "SELECT d.id_dotazione, d.nome
          FROM contiene c

@@ -15,7 +15,7 @@ $ts = strtotime($day);
 if ($roomId <= 0) err('roomId mancante', 422);
 if ($ts === false) err('day non valido', 422);
 
-// lun-dom ISO
+
 $dow = (int)date('N', $ts);
 $monday = date('Y-m-d', strtotime('-'.($dow-1).' day', $ts));
 $sunday = date('Y-m-d', strtotime('+'.(7-$dow).' day', $ts));

@@ -11,11 +11,11 @@ function ok($data) {
 }
 
 try {
-    // Recupera tutti i settori
+    
     $stmt = $pdo->query("SELECT id_settore, nome FROM settore ORDER BY nome ASC");
     $settori = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // IMPORTANTE: Anche se vuoto, deve tornare un array []
+    
     ok($settori); 
     
 } catch (Exception $e) {
