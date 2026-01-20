@@ -1,6 +1,12 @@
 'use strict';
 
-// --- FUNZIONI HELPER GLOBALI ---
+/**
+ * ============================================================================
+ * PLAY ROOM PLANNER - GESTIONE PROFILO UTENTE
+ * ============================================================================
+ */
+
+// --- FUNZIONI UTILITY DI BASE ---
 function setValue(id, val) {
     const el = document.getElementById(id);
     if (el) el.value = val || '';
@@ -11,212 +17,292 @@ function setText(id, val) {
     if (el) el.textContent = val || '';
 }
 
-// --- CARICAMENTO PROFILO ---
-async function loadProfile() {
-    try {
-        const userIdInput = document.getElementById('currentUserId');
-        if (!userIdInput) return; // Sicurezza se l'input non c'è
+// --- INIZIALIZZAZIONE ---
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // 1. Verifica presenza ID Utente (Sicurezza base frontend)
+    const userIdInput = document.getElementById('currentUserId');
+    if (!userIdInput) return; 
+    const userId = userIdInput.value;
 
-        const userId = userIdInput.value;
+    // 2. Avvio Moduli
+    loadProfile(userId);        // Carica dati iniziali
+    initProfileForm(userId);    // Gestione Anagrafica (Nome/Cognome)
+    initPhotoUpload(userId);    // Gestione Foto
+    initPasswordForm(userId);   // Gestione Password Sicura
+});
+
+/**
+ * ----------------------------------------------------------------------------
+ * 1. CARICAMENTO DATI PROFILO (GET)
+ * Recupera i dati dal server e popola i campi, inclusa la logica "Responsabile".
+ * ----------------------------------------------------------------------------
+ */
+async function loadProfile(userId) {
+    try {
         const res = await fetch(`api/users.php?id=${userId}`);
         const payload = await res.json();
         
-        if (!res.ok || !payload.ok) throw new Error(payload.message || 'Errore');
+        if (!res.ok || !payload.ok) throw new Error(payload.message || 'Errore nel caricamento dati');
 
         const user = payload.data;
 
-        // --- POPOLAMENTO HEADER ---
+        // A. Header e Info Rapide
         setText('displayNome', `${user.nome} ${user.cognome}`);
         const ruoloCap = user.ruolo ? user.ruolo.charAt(0).toUpperCase() + user.ruolo.slice(1) : '';
         setText('displayRuolo', ruoloCap);
 
+        // B. Immagine Profilo (con Cache Busting)
         const imgEl = document.getElementById('profilePreview');
         if (imgEl) {
             const fotoPath = (user.foto && user.foto !== 'default.png') 
                              ? `uploads/${user.foto}` : 'images/default.png';
+            // Aggiungiamo timestamp per forzare il refresh dell'immagine
             imgEl.src = `${fotoPath}?t=${Date.now()}`;
         }
 
-        // --- POPOLAMENTO CAMPI ---
-        // 1. Matricola (ID) con zeri (es. 00024)
+        // C. Campi Anagrafica Form
         const matInput = document.getElementById('fieldMatricola');
-        if (matInput && user.id_iscritto) {
-            matInput.value = String(user.id_iscritto).padStart(5, '0');
-        }
+        if (matInput) matInput.value = String(user.id_iscritto).padStart(5, '0');
 
         setValue('fieldRuolo', ruoloCap);
         setValue('fieldNome', user.nome);
         setValue('fieldCognome', user.cognome);
         setValue('fieldEmail', user.email);
         
-        // 2. Data di nascita (formato YYYY-MM-DD per l'input date)
         const dateInput = document.getElementById('fieldDataNascita');
-        if (dateInput && user.data_nascita) {
-            dateInput.value = user.data_nascita;
+        if (dateInput && user.data_nascita) dateInput.value = user.data_nascita;
+
+        // D. Sezione Responsabile di Settore (Logica Condizionale)
+        const respSection = document.getElementById('respSection');
+        // Se il backend restituisce il nome del settore, l'utente è un responsabile
+        if (user.nome_settore_resp) {
+            if (respSection) respSection.classList.remove('d-none');
+            setText('respSettoreNome', user.nome_settore_resp);
+            setValue('respAnni', user.anni_servizio + (user.anni_servizio == 1 ? ' anno' : ' anni'));
+            setValue('respData', user.data_nomina);
+        } else {
+            // Nascondi se non è responsabile
+            if (respSection) respSection.classList.add('d-none');
         }
 
     } catch (err) {
-        console.error(err);
-        const alertBox = document.getElementById('alertBox');
-        if (alertBox) alertBox.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+        console.error("Errore loadProfile:", err);
     }
 }
 
-// --- INIZIALIZZAZIONE AL CARICAMENTO DOM ---
-document.addEventListener('DOMContentLoaded', () => {
-    loadProfile();
-    const userIdInput = document.getElementById('currentUserId');
-    if (!userIdInput) return; 
-    
-    const userId = userIdInput.value;
+/**
+ * ----------------------------------------------------------------------------
+ * 2. AGGIORNAMENTO ANAGRAFICA (PUT)
+ * Modifica solo Nome e Cognome.
+ * ----------------------------------------------------------------------------
+ */
+function initProfileForm(userId) {
+    const form = document.getElementById('profileForm');
+    if (!form) return;
 
-    // --- FORM 1: ANAGRAFICA ---
-    const formProfile = document.getElementById('profileForm');
-    if (formProfile) {
-        formProfile.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const dataToSend = {
-                nome: document.getElementById('fieldNome').value,
-                cognome: document.getElementById('fieldCognome').value
-            };
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const dataToSend = {
+            nome: document.getElementById('fieldNome').value,
+            cognome: document.getElementById('fieldCognome').value
+        };
+
+        // Feedback UI
+        const btn = form.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Salvataggio...';
+
+        try {
+            const res = await fetch(`api/users.php?id=${userId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataToSend)
+            });
+            const result = await res.json();
+
+            if (res.ok && result.ok) {
+                alert('Dati anagrafici aggiornati!');
+                loadProfile(userId); // Ricarica per aggiornare l'header
+            } else {
+                alert('Errore: ' + (result.message || 'Sconosciuto'));
+            }
+        } catch (err) {
+            alert("Errore di connessione al server.");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+}
+
+/**
+ * ----------------------------------------------------------------------------
+ * 3. UPLOAD FOTO (POST Multipart)
+ * Caricamento immediato al cambio file (evento change).
+ * ----------------------------------------------------------------------------
+ */
+function initPhotoUpload(userId) {
+    const input = document.getElementById('uploadFoto');
+    if (!input) return;
+
+    input.addEventListener('change', async function() {
+        if (this.files && this.files[0]) {
+            const formData = new FormData();
+            formData.append('foto', this.files[0]);
+            
+            // Preview opaca durante il caricamento
+            const imgEl = document.getElementById('profilePreview');
+            if(imgEl) imgEl.style.opacity = '0.5';
 
             try {
                 const res = await fetch(`api/users.php?id=${userId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dataToSend)
+                    method: 'POST',
+                    body: formData // FormData imposta automaticamente l'header corretto
                 });
                 const result = await res.json();
-                if (res.ok && result.ok) {
-                    alert('Anagrafica aggiornata!');
-                    loadProfile(); 
+                
+                if (result.ok) {
+                    loadProfile(userId); // Ricarica l'immagine ufficiale
+                    alert('Foto aggiornata con successo!');
                 } else {
-                    alert('Errore: ' + (result.message || 'Sconosciuto'));
+                    alert('Errore upload: ' + result.message);
                 }
-            } catch (err) { alert("Errore connessione"); }
-        });
-    }
+            } catch (err) {
+                alert('Errore di connessione durante l\'upload.');
+            } finally {
+                if(imgEl) imgEl.style.opacity = '1';
+                this.value = ''; // Reset input per permettere ricaricamento stesso file
+            }
+        }
+    });
+}
 
-    // --- FORM 2: PASSWORD CON VALIDAZIONE LIVE ---
-    const formPass = document.getElementById('passwordForm');
+/**
+ * ----------------------------------------------------------------------------
+ * 4. CAMBIO PASSWORD SICURO (PUT)
+ * Verifica vecchia password -> Controlla Requisiti -> Aggiorna
+ * ----------------------------------------------------------------------------
+ */
+function initPasswordForm(userId) {
+    const form = document.getElementById('passwordForm');
     const newPassInput = document.getElementById('newPass');
     const confPassInput = document.getElementById('confirmPass');
+    const oldPassInput = document.getElementById('oldPass');
     const rulesBox = document.getElementById('passwordRules');
 
-    // Funzione helper visiva
-    function updateReq(id, isValid) {
-        const el = document.querySelector(id);
-        if (!el) return isValid;
+    // Controllo esistenza elementi
+    if (!form || !newPassInput || !confPassInput || !oldPassInput) return;
+
+    // --- A. Helper Visuale Requisiti ---
+    function updateReq(selector, isValid) {
+        const el = document.querySelector(selector);
+        if (!el) return;
+        
         const icon = el.querySelector('i');
-        
         if (isValid) {
-            el.classList.add('valid');
-            if(icon) {
-                icon.classList.remove('bi-circle', 'bi-x-circle');
-                icon.classList.add('bi-check-circle-fill');
-            }
+            el.classList.remove('text-muted');
+            el.classList.add('text-success', 'fw-bold');
+            if(icon) icon.className = 'bi bi-check-circle-fill me-2';
         } else {
-            el.classList.remove('valid');
-            if(icon) {
-                icon.classList.remove('bi-check-circle-fill', 'bi-x-circle');
-                icon.classList.add('bi-circle');
-            }
+            el.classList.remove('text-success', 'fw-bold');
+            el.classList.add('text-muted');
+            if(icon) icon.className = 'bi bi-circle me-2';
         }
-        return isValid;
     }
 
-    if (formPass && newPassInput && confPassInput) {
+    // --- B. Validazione LIVE (mentre scrivi) ---
+    function checkRules() {
+        if (rulesBox) rulesBox.classList.remove('d-none');
         
-        // Evento LIVE mentre scrivi
-        function checkRules() {
-            if (rulesBox) rulesBox.classList.remove('d-none');
-            
-            const val = newPassInput.value;
-            const conf = confPassInput.value;
+        const val = newPassInput.value;
+        const conf = confPassInput.value;
 
-            // 1. Lunghezza
-            updateReq('#req-length', val.length >= 8);
-            
-            // 2. Maiuscola
-            updateReq('#req-upper', /[A-Z]/.test(val));
-
-            // 3. Speciale
-            updateReq('#req-special', /[!@#$%^&*(),.?":{}|<>]/.test(val));
-
-            // 4. Coincidenza (solo se conferma non è vuota)
-            if(conf.length > 0) {
-                updateReq('#req-match', val === conf);
-            } else {
-                // Reset visivo se vuoto
-                const el = document.querySelector('#req-match');
-                if (el) {
-                    el.classList.remove('valid');
-                    const icon = el.querySelector('i');
-                    if(icon) {
-                        icon.classList.remove('bi-check-circle-fill');
-                        icon.classList.add('bi-circle');
-                    }
-                }
+        updateReq('#req-length', val.length >= 8);
+        updateReq('#req-upper', /[A-Z]/.test(val));
+        updateReq('#req-special', /[!@#$%^&*(),.?":{}|<>]/.test(val));
+        
+        // Controllo coincidenza password
+        if (conf.length > 0) {
+            updateReq('#req-match', val === conf);
+        } else {
+            // Reset visivo se campo conferma vuoto
+            const matchEl = document.querySelector('#req-match');
+            if (matchEl) {
+                matchEl.classList.remove('text-success', 'fw-bold');
+                matchEl.classList.add('text-muted');
+                matchEl.querySelector('i').className = 'bi bi-circle me-2';
             }
         }
-
-        newPassInput.addEventListener('input', checkRules);
-        newPassInput.addEventListener('focus', checkRules);
-        confPassInput.addEventListener('input', checkRules);
-
-        // SUBMIT
-        formPass.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const oldP = document.getElementById('oldPass').value;
-            const newP = newPassInput.value;
-            const confP = confPassInput.value;
-
-            // Validazione Finale JS
-            const hasUpper = /[A-Z]/.test(newP);
-            const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(newP);
-
-            if (newP.length < 8 || !hasUpper || !hasSpecial || newP !== confP) {
-                alert("La password non rispetta tutti i requisiti di sicurezza indicati.");
-                return;
-            }
-
-            const dataToSend = {
-                old_password: oldP,
-                new_password: newP
-            };
-
-            const btn = document.getElementById('btnSavePass');
-            btn.disabled = true;
-            btn.textContent = 'Aggiornamento...';
-
-            try {
-                const res = await fetch(`api/users.php?id=${userId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dataToSend)
-                });
-                const result = await res.json();
-
-                if (res.ok && result.ok) {
-                    alert('Password aggiornata con successo!');
-                    formPass.reset(); 
-                    if(rulesBox) rulesBox.classList.add('d-none');
-                    // Reset icone
-                    document.querySelectorAll('.req-item').forEach(el => {
-                         el.classList.remove('valid');
-                         const i = el.querySelector('i');
-                         if(i) i.className = 'bi bi-circle';
-                    });
-                } else {
-                    alert('Errore: ' + (result.message || 'Vecchia password errata'));
-                }
-            } catch (err) { 
-                alert("Errore connessione"); 
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Aggiorna Password';
-            }
-        });
     }
-}); // <--- QUESTA ERA LA PARTE MANCANTE!
+
+    // Event Listeners Input
+    newPassInput.addEventListener('input', checkRules);
+    newPassInput.addEventListener('focus', checkRules);
+    confPassInput.addEventListener('input', checkRules);
+
+    // --- C. Invio Modulo (SUBMIT) ---
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault(); // Blocca ricaricamento pagina
+        
+        const oldP = oldPassInput.value;
+        const newP = newPassInput.value;
+        const confP = confPassInput.value;
+
+        // 1. Validazione Client
+        const hasUpper = /[A-Z]/.test(newP);
+        const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(newP);
+
+        if (newP.length < 8 || !hasUpper || !hasSpecial || newP !== confP) {
+            alert("Attenzione: Controlla che tutti i requisiti della password siano verdi.");
+            return;
+        }
+
+        // 2. Feedback UI
+        const btn = document.getElementById('btnSavePass');
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Verifica in corso...';
+
+        const dataToSend = {
+            old_password: oldP,
+            new_password: newP
+        };
+
+        try {
+            // 3. Chiamata al Server (Verifica Hash DB e Aggiornamento)
+            const res = await fetch(`api/users.php?id=${userId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataToSend)
+            });
+            const result = await res.json();
+
+            // 4. Gestione Risultato
+            if (res.ok && result.ok) {
+                alert('Password aggiornata con successo!');
+                
+                // Reset Form e UI
+                form.reset(); 
+                if(rulesBox) rulesBox.classList.add('d-none');
+                document.querySelectorAll('.req-item').forEach(el => {
+                     el.className = 'req-item text-muted';
+                     const i = el.querySelector('i');
+                     if(i) i.className = 'bi bi-circle me-2';
+                });
+
+            } else {
+                // Errore dal server (es: Vecchia password errata)
+                alert('Errore: ' + (result.message || 'La password attuale non è corretta.'));
+            }
+        } catch (err) { 
+            console.error(err);
+            alert("Errore critico di comunicazione col server."); 
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    });
+}

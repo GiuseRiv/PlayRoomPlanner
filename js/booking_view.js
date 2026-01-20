@@ -4,12 +4,18 @@
   const BOOKING_ID = Number(window.BOOKING_ID || 0);
   const API_URL = 'api/booking_view.php?id=' + encodeURIComponent(BOOKING_ID);
 
+  // =============================================================
+  // Helper: escape HTML
+  // =============================================================
   function esc(str) {
     return String(str ?? '').replace(/[&<>"']/g, m => ({
       '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
     }[m]));
   }
 
+  // =============================================================
+  // Alert Box
+  // =============================================================
   function showAlert(type, msg) {
     const box = document.getElementById('alertBox');
     if (box) {
@@ -21,6 +27,9 @@
     }
   }
 
+  // =============================================================
+  // Badge Stato
+  // =============================================================
   function badgeStato(stato) {
     const s = (stato || '').toLowerCase();
     let cls = 'bg-secondary';
@@ -30,6 +39,9 @@
     return `<span class="badge ${cls}">${esc(stato || 'N/D')}</span>`;
   }
 
+  // =============================================================
+  // Badge Ruolo
+  // =============================================================
   function badgeRuolo(ruolo) {
       const r = (ruolo || '').toLowerCase();
       let cls = 'bg-light text-dark border';
@@ -38,12 +50,63 @@
       return `<span class="badge ${cls}">${esc(ruolo)}</span>`;
   }
 
+  // =============================================================
+  // Format Date YYYY-MM-DD → DD/MM/YYYY
+  // =============================================================
   function formatDate(ymd) {
     if (!ymd) return '-';
     const [y, m, d] = ymd.split('-');
     return `${d}/${m}/${y}`;
   }
 
+  // =============================================================
+  // Toggle Motivazione Rifiuto
+  // =============================================================
+  function toggleMotivo(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('d-none');
+  }
+  window.toggleMotivo = toggleMotivo; // globale perché onclick inline
+
+  // =============================================================
+  // Stato + Data risposta + Motivazione (solo se disponibile)
+  // =============================================================
+  function statoConDettagli(u) {
+    let html = badgeStato(u.stato);
+
+    // Data risposta
+    if (u.data_risposta) {
+      html += `
+        <div class="small text-muted mt-1">
+          <i class="bi bi-calendar-check me-1"></i>
+          ${formatDate(u.data_risposta.split(' ')[0])}
+        </div>
+      `;
+    }
+
+    // Motivazione rifiuto
+    if (u.stato === 'rifiutato' && u.motivazione_rifiuto) {
+      const id = `motivo-${u.id_iscritto}`;
+      html += `
+        <div class="mt-1">
+          <a href="#" class="small text-danger text-decoration-none"
+             onclick="toggleMotivo('${id}'); return false;">
+             ▶ Mostra motivazione
+          </a>
+          <div id="${id}" class="d-none mt-2">
+            <textarea class="form-control form-control-sm bg-light"
+                      rows="2" readonly>${esc(u.motivazione_rifiuto)}</textarea>
+          </div>
+        </div>
+      `;
+    }
+
+    return html;
+  }
+
+  // =============================================================
+  // Main Load
+  // =============================================================
   async function load() {
     if (!BOOKING_ID) {
       document.getElementById('loadingSpinner').classList.add('d-none');
@@ -62,22 +125,17 @@
         const data = payload.data || {};
         const p = data.prenotazione || {};
 
-        // ============================================================
-        // 1. AGGIORNAMENTO BARRA PROGRESSO (PRIORITARIO)
-        // ============================================================
+        // -----------------------
+        // Barra occupazione
+        // -----------------------
         try {
             const capienza = parseInt(p.capienza);
-            // Se capienza è 0 o NaN (errore dati), mettiamo 1 per evitare divisione per zero
             const maxCap = (capienza && capienza > 0) ? capienza : 1; 
-            
-            // Organizzatore (1) + Invitati Accettati
             const organizerCount = 1; 
             const acceptedInvites = parseInt(data.inviti_stats?.accettati) || 0;
             const occupied = organizerCount + acceptedInvites;
             
             let percent = (occupied / maxCap) * 100;
-            
-            // Larghezza visuale (minimo 5% se c'è qualcuno, per non farla sparire)
             let visualPercent = percent;
             if (visualPercent > 100) visualPercent = 100;
             if (occupied > 0 && visualPercent < 5) visualPercent = 5;
@@ -88,11 +146,8 @@
 
             if (bar) {
                 bar.style.width = visualPercent + '%';
-                
-                // Reset classi
                 bar.className = 'progress-bar progress-bar-striped transition'; 
-                
-                // Colori
+
                 if (percent >= 100) {
                     bar.classList.add('bg-danger');
                     if(fullBadge) fullBadge.classList.remove('d-none');
@@ -105,14 +160,13 @@
                 }
             }
             if (textEl) textEl.textContent = `${occupied} su ${maxCap}`;
-
         } catch (barErr) {
             console.error("Errore calcolo barra:", barErr);
         }
 
-        // ============================================================
-        // 2. POPOLAMENTO DATI TESTUALI
-        // ============================================================
+        // -----------------------
+        // Popolamento dati testuali
+        // -----------------------
         document.getElementById('headerTitle').textContent = p.attivita || 'Dettaglio';
         document.getElementById('attivita').textContent = p.attivita || '—';
         document.getElementById('statoBadge').innerHTML = badgeStato(p.stato);
@@ -127,7 +181,7 @@
         document.getElementById('settore').textContent = p.nome_settore || '-';
         document.getElementById('tipoSettore').textContent = p.tipo_settore ? `(${p.tipo_settore})` : '';
 
-        // Dotazioni (con controllo array)
+        // Dotazioni
         const dotsBox = document.getElementById('dotazioni');
         const dots = Array.isArray(data.dotazioni) ? data.dotazioni : [];
         if (dots.length === 0) {
@@ -138,21 +192,20 @@
             ).join('');
         }
 
-        // Breakdown testuale inviti
+        // Breakdown inviti
         const stats = data.inviti_stats || { tot:0, accettati:0, pendenti:0, rifiutati:0 };
         document.getElementById('roleBreakdown').textContent = 
             `Totale invitati: ${stats.tot} (✅ ${stats.accettati} confermati, ⏳ ${stats.pendenti} in attesa, ❌ ${stats.rifiutati} rifiutati)`;
 
-        // ============================================================
-        // 3. TABELLA VS PRIVACY
-        // ============================================================
+        // -----------------------
+        // Tabella invitati
+        // -----------------------
         const invitati = Array.isArray(data.invitati) ? data.invitati : [];
         const tableContainer = document.getElementById('tableContainer');
         const hiddenMsg = document.getElementById('hiddenListMessage');
         const tbody = document.getElementById('invTbody');
 
         if (invitati.length > 0) {
-            // Mostra Tabella
             if(tableContainer) tableContainer.classList.remove('d-none');
             if(hiddenMsg) hiddenMsg.classList.add('d-none');
 
@@ -166,26 +219,23 @@
                             </a>
                         </td>
                         <td>${badgeRuolo(u.ruolo)}</td>
-                        <td>${badgeStato(u.stato)}</td>
+                        <td>${statoConDettagli(u)}</td>
                     </tr>
                 `).join('');
             }
         } else {
-            // Nascondi Tabella
             if(tableContainer) tableContainer.classList.add('d-none');
-            // Mostra privacy solo se ci sono invitati ma non li vediamo
             if (hiddenMsg) {
                 if (stats.tot > 0) hiddenMsg.classList.remove('d-none');
                 else hiddenMsg.classList.add('d-none');
             }
         }
 
-        // Mostra tutto
         document.getElementById('loadingSpinner').classList.add('d-none');
         document.getElementById('mainContent').classList.remove('d-none');
 
     } catch (err) {
-        console.error(err); // Log per debug
+        console.error(err);
         document.getElementById('loadingSpinner').classList.add('d-none');
         showAlert('danger', 'Errore imprevisto: ' + err.message);
     }

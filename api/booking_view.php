@@ -139,6 +139,14 @@ try {
   if ($viewerRole === 'allievo') {
       $invitati = []; 
   }
+  // Solo l'organizzatore può vedere data_risposta e data_invio
+  if (!$isOrganizer && !empty($invitati)) {
+     foreach ($invitati as &$inv) {
+         unset($inv['data_risposta'], $inv['data_invio'], $inv['motivazione_rifiuto']);
+     }
+     unset($inv); // buona pratica con riferimenti
+  }
+
   // ----------------------
 
   ok([

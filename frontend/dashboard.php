@@ -117,6 +117,22 @@
       </div>
       <?php endif; ?>
 
+      <?php if ($ruolo === 'tecnico' || $ruolo === 'docente'): ?>
+      <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm border-0 h-100 hover-shadow transition">
+          <div class="card-body">
+            <h5 class="card-title text-dark"><i class="bi bi-people me-2"></i>Elenco iscritti</h5>
+            <p class="card-text text-muted small">
+                <?php echo ($ruolo === 'tecnico') ? 'Amministra utenti e ruoli.' : 'Visualizza elenco iscritti.'; ?>
+            </p>
+            <a href="index.php?page=users_manage" class="btn btn-dark w-100">
+                <?php echo ($ruolo === 'tecnico') ? 'Gestisci iscritti' : 'Consulta iscritti'; ?>
+            </a>
+          </div>
+        </div>
+      </div>
+      <?php endif; ?>
+
       <?php if ($ruolo === 'tecnico'): ?>
       <div class="col-md-6 col-lg-4">
         <div class="card shadow-sm border-0 h-100 hover-shadow transition">
@@ -127,22 +143,8 @@
           </div>
         </div>
       </div>
-
-      <div class="col-md-6 col-lg-4">
-        <div class="card shadow-sm border-0 h-100 hover-shadow transition">
-          <div class="card-body">
-            <h5 class="card-title text-dark"><i class="bi bi-people me-2"></i>Gestione iscritti</h5>
-            <p class="card-text text-muted small">Amministra utenti e ruoli.</p>
-            <a href="index.php?page=users_manage" class="btn btn-dark w-100">Gestisci iscritti</a>
-          </div>
-        </div>
-      </div>
       <?php endif; ?>
 
-    </div>
-  </div>
-
-  
-  <script src="js/dashboard.js"></script>
+    </div> </div> <script src="js/dashboard.js"></script>
 </body>
 </html>

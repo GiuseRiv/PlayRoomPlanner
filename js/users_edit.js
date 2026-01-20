@@ -1,127 +1,184 @@
 'use strict';
 
-const API_SINGLE_USER = 'api/users.php';
-const API_SECTORS = 'api/sectors.php';
-const API_UPDATE = 'api/users_admin_update.php';
+const userId = new URLSearchParams(window.location.search).get('id');
+const API_USER = `api/users_admin.php?id=${userId}`; 
+const API_SECTORS_INFO = 'api/users_admin.php?info_settori=1'; 
+const API_SAVE = `api/users_admin.php?id=${userId}`;
 
-const params = new URLSearchParams(window.location.search);
-const ID_UTENTE = params.get('id');
+let allSectorsData = []; 
+let currentUserId = parseInt(userId);
 
-function showAlert(type, msg) {
-  const box = document.getElementById('alertBox');
-  if(box) box.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show">${msg}<button class="btn-close" data-bs-dismiss="alert"></button></div>`;
-}
-
-// LOGICA TECNICO: Usa la classe CSS personalizzata
-function toggleSectorVisibility() {
-    const ruoloSelect = document.getElementById('fieldRuolo');
-    const boxSettori = document.getElementById('boxSettori');
-    const msgTecnico = document.getElementById('msgTecnico');
-    const fieldSettori = document.getElementById('fieldSettori');
-
-    if (ruoloSelect.value === 'tecnico') {
-        boxSettori.classList.add('opacity-50'); // Classe definita in app.css
-        fieldSettori.disabled = true;
-        msgTecnico.classList.remove('d-none');
-    } else {
-        boxSettori.classList.remove('opacity-50');
-        fieldSettori.disabled = false;
-        msgTecnico.classList.add('d-none');
-    }
-}
-
-async function init() {
-  if (!ID_UTENTE) {
-    showAlert('danger', 'ID Utente mancante.');
-    const form = document.querySelector('form'); if(form) form.style.display = 'none';
-    return;
-  }
-
-  try {
-    const [resUser, resSectors] = await Promise.all([
-      fetch(`${API_SINGLE_USER}?id=${ID_UTENTE}`),
-      fetch(API_SECTORS)
-    ]);
-
-    const userJson = await resUser.json();
-    const sectorsJson = await resSectors.json();
-
-    if (!userJson.ok) throw new Error(userJson.message);
-    
-    const user = userJson.data;
-    const sectors = Array.isArray(sectorsJson.data) ? sectorsJson.data : [];
-
-    // Popola Sinistra
-    document.getElementById('userId').value = user.id_iscritto;
-    document.getElementById('displayId').textContent = user.id_iscritto;
-    document.getElementById('displayNomeCompleto').textContent = `${user.nome} ${user.cognome}`;
-    document.getElementById('displayEmail').textContent = user.email;
-    document.getElementById('displayDataNascita').textContent = user.data_nascita || 'Non impostata';
-    
-    // Placeholder SVG Base64 (non richiede file esterni)
-    const placeholder = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2NjYyIgc3Ryb2tlLXdpZHRoPSIxIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIj48L2NpcmNsZT48cGF0aCBkPSJNMjAgMjF2LTIgYS00IDQtNCAwLTAgMS04LTggdi0yIj48L3BhdGg+PGNpcmNsZSBjeD0iMTIiIGN5PSI3IiByPSI0Ij48L2NpcmNsZT48L3N2Zz4=';
-    document.getElementById('displayFoto').src = user.foto ? user.foto : placeholder;
-
-    const badge = document.getElementById('displayRuoloBadge');
-    badge.innerHTML = `<span class="badge bg-${user.ruolo === 'tecnico' ? 'dark' : user.ruolo === 'docente' ? 'primary' : 'secondary'}">${user.ruolo.toUpperCase()}</span>`;
-
-    // Popola Destra
-    const roleSelect = document.getElementById('fieldRuolo');
-    roleSelect.value = user.ruolo;
-
-    const sectorSelect = document.getElementById('fieldSettori');
-    sectorSelect.innerHTML = sectors.map(s => `<option value="${s.id_settore}">${s.nome}</option>`).join('');
-
-    const userSectors = user.settori_ids || [];
-    Array.from(sectorSelect.options).forEach(opt => {
-        if (userSectors.some(id => id == opt.value)) opt.selected = true;
-    });
-
-    // Inizializza logica tecnico
-    toggleSectorVisibility();
-    roleSelect.addEventListener('change', toggleSectorVisibility);
-
-  } catch (e) {
-    console.error(e);
-    showAlert('danger', 'Errore: ' + e.message);
-  }
-}
-
-const editForm = document.getElementById('editForm');
-if(editForm) {
-  editForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    const roleSelect = document.getElementById('fieldRuolo');
-    const sectorSelect = document.getElementById('fieldSettori');
-    
-    // Se Tecnico -> Array vuoto di settori
-    let settoriFinali = [];
-    if (roleSelect.value !== 'tecnico') {
-        settoriFinali = Array.from(sectorSelect.selectedOptions).map(o => o.value);
-    }
-
-    const payload = {
-      id_iscritto: document.getElementById('userId').value,
-      ruolo: roleSelect.value,
-      settori: settoriFinali
-    };
-
+document.addEventListener('DOMContentLoaded', async () => {
     try {
-      const res = await fetch(API_UPDATE, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const json = await res.json();
-      if (!res.ok || !json.ok) throw new Error(json.message || 'Errore salvataggio');
+        const [userRes, sectorsRes] = await Promise.all([fetch(API_USER), fetch(API_SECTORS_INFO)]);
+        
+        const userJson = await userRes.json();
+        const sectorsJson = await sectorsRes.json();
 
-      showAlert('success', 'Profilo aggiornato! Reindirizzamento...');
-      setTimeout(() => { window.location.href = 'index.php?page=users_manage'; }, 1500);
+        if (!userJson.ok) throw new Error(userJson.message || "Errore dati utente");
+        
+        const user = userJson.data;
+        allSectorsData = sectorsJson.data || [];
+
+        // === 1. POPOLAMENTO COLONNA SINISTRA ===
+        document.getElementById('displayNomeCompleto').textContent = `${user.nome} ${user.cognome}`;
+        
+        const badge = document.getElementById('displayRuoloBadge');
+        badge.className = `badge ${user.ruolo === 'docente' ? 'bg-primary' : (user.ruolo === 'tecnico' ? 'bg-dark' : 'bg-secondary')}`;
+        badge.textContent = (user.ruolo || '').toUpperCase();
+
+        // NUOVO: SEGNALAZIONE RESPONSABILE SINISTRA
+        const displayResp = document.getElementById('displayResponsabilita');
+        if (user.is_responsabile && user.responsabile_id_settore) {
+            // Cerchiamo il nome del settore nella lista scaricata
+            const nomeSettore = allSectorsData.find(s => s.id_settore == user.responsabile_id_settore)?.nome || 'Sconosciuto';
+            
+            displayResp.innerHTML = `
+                <div class="alert alert-warning py-1 px-2 mb-3 small fw-bold border-warning text-dark">
+                    <i class="bi bi-star-fill text-warning"></i> Resp. ${nomeSettore}
+                </div>
+            `;
+            displayResp.classList.remove('d-none');
+        } else {
+            displayResp.classList.add('d-none');
+        }
+
+        document.getElementById('displayEmail').textContent = user.email || '-';
+        document.getElementById('displayDataNascita').textContent = user.data_nascita || '-';
+        document.getElementById('displayId').textContent = '#' + String(user.id_iscritto).padStart(5,'0');
+
+        const img = document.getElementById('displayFoto');
+        img.src = (user.foto && user.foto !== 'default.png') ? `uploads/${user.foto}` : 'images/default.png';
+
+        const displaySettori = document.getElementById('displaySettori');
+        if (user.settori_nomi) {
+            displaySettori.innerHTML = user.settori_nomi.split(', ').map(s => 
+                `<span class="badge bg-light text-dark me-1 mb-1 border">${s}</span>`
+            ).join('');
+        } else {
+            displaySettori.textContent = 'Nessun settore assegnato';
+        }
+
+        // Calcolo Anni (Sinistra)
+        if (user.data_nomina) {
+            const startYear = new Date(user.data_nomina).getFullYear();
+            const currentYear = new Date().getFullYear();
+            const years = currentYear - startYear;
+            
+            document.getElementById('displayAnniAttivita').textContent = (years === 0) ? "< 1 anno" : `${years} anni`;
+            document.getElementById('displayDataIncarico').textContent = user.data_nomina; 
+        } else {
+            document.getElementById('displayAnniAttivita').textContent = '-';
+            document.getElementById('displayDataIncarico').textContent = '-';
+        }
+
+        // === 2. POPOLAMENTO MENU (Destra) ===
+        const roleSelect = document.getElementById('fieldRuolo');
+        const sectorsSelect = document.getElementById('fieldSettori');
+        const respSectorSelect = document.getElementById('selectSettoreResp');
+        
+        roleSelect.value = user.ruolo;
+        sectorsSelect.innerHTML = '';
+        respSectorSelect.innerHTML = '';
+
+        allSectorsData.forEach(sec => {
+            const opt = document.createElement('option');
+            opt.value = sec.id_settore;
+            opt.textContent = sec.nome;
+            sectorsSelect.appendChild(opt);
+            
+            const optResp = document.createElement('option');
+            optResp.value = sec.id_settore;
+            optResp.textContent = sec.nome; 
+            respSectorSelect.appendChild(optResp);
+        });
+
+        if (user.settori_ids) {
+            const ids = String(user.settori_ids).split(',').map(s => s.trim());
+            Array.from(sectorsSelect.options).forEach(opt => {
+                if (ids.includes(opt.value)) opt.selected = true;
+            });
+        }
+
+        // === 3. GESTIONE INTERFACCIA ===
+        const respCheckbox = document.getElementById('checkResponsabile');
+        const respContainer = document.getElementById('containerResponsabile');
+        const msgTecnico = document.getElementById('msgTecnico');
+        const boxSettori = document.getElementById('boxSettori');
+
+        if (user.is_responsabile) {
+            respCheckbox.checked = true;
+            respSectorSelect.value = user.responsabile_id_settore;
+        }
+
+        function updateUI() {
+            const role = roleSelect.value;
+            
+            if (role === 'tecnico') {
+                boxSettori.classList.add('disabled-area');
+                Array.from(sectorsSelect.options).forEach(opt => opt.selected = true);
+                respContainer.style.display = 'none';
+                msgTecnico.classList.remove('d-none');
+            } else if (role === 'docente') {
+                boxSettori.classList.remove('disabled-area');
+                respContainer.style.display = 'block';
+                msgTecnico.classList.add('d-none');
+            } else {
+                boxSettori.classList.remove('disabled-area');
+                respContainer.style.display = 'none';
+                msgTecnico.classList.add('d-none');
+            }
+
+            document.getElementById('dettagliResponsabile').style.display = respCheckbox.checked ? 'block' : 'none';
+        }
+
+        roleSelect.addEventListener('change', updateUI);
+        respCheckbox.addEventListener('change', updateUI);
+
+        respSectorSelect.addEventListener('change', () => {
+             const selectedId = parseInt(respSectorSelect.value);
+             const sectorInfo = allSectorsData.find(s => s.id_settore == selectedId);
+             const warnBox = document.getElementById('msgResponsabileOccupato');
+             
+             if (sectorInfo && sectorInfo.id_responsabile && parseInt(sectorInfo.id_responsabile) !== currentUserId) {
+                 warnBox.innerHTML = `⚠️ Attuale responsabile: <b>${sectorInfo.nome_responsabile}</b>. Verrà sostituito.`;
+                 warnBox.classList.remove('d-none');
+             } else {
+                 warnBox.classList.add('d-none');
+             }
+        });
+
+        updateUI();
+
+        // === SALVATAGGIO ===
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const payload = {
+                ruolo: roleSelect.value,
+                settori: Array.from(sectorsSelect.selectedOptions).map(o => o.value),
+                is_responsabile: respCheckbox.checked,
+                id_settore_responsabilita: respSectorSelect.value
+            };
+
+            try {
+                const res = await fetch(API_SAVE, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                if(!json.ok) throw new Error(json.message);
+                
+                alert("Salvataggio riuscito!");
+                window.location.reload();
+            } catch(err) {
+                alert("Errore: " + err.message);
+            }
+        });
 
     } catch (err) {
-      showAlert('danger', err.message);
+        console.error(err);
+        document.getElementById('alertBox').innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
     }
-  });
-}
-
-init();
+});
