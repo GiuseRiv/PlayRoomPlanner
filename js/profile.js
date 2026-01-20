@@ -75,12 +75,32 @@ async function loadProfile(userId) {
 
         // D. Sezione Responsabile di Settore (Logica Condizionale)
         const respSection = document.getElementById('respSection');
-        // Se il backend restituisce il nome del settore, l'utente è un responsabile
+        
         if (user.nome_settore_resp) {
             if (respSection) respSection.classList.remove('d-none');
             setText('respSettoreNome', user.nome_settore_resp);
-            setValue('respAnni', user.anni_servizio + (user.anni_servizio == 1 ? ' anno' : ' anni'));
+            
+            // --- MODIFICA: CALCOLO DINAMICO ANNI ---
+            // Invece di usare user.anni_servizio diretto, calcoliamo dalla data
+            let testoAnni = '-';
+            if (user.data_nomina) {
+                const startYear = new Date(user.data_nomina).getFullYear();
+                const currentYear = new Date().getFullYear();
+                let diff = currentYear - startYear;
+                
+                if (diff < 0) diff = 0; // Protezione date future
+
+                if (diff === 0) {
+                    testoAnni = "< 1 anno";
+                } else {
+                    testoAnni = diff + (diff === 1 ? ' anno' : ' anni');
+                }
+            }
+            
+            setValue('respAnni', testoAnni);
             setValue('respData', user.data_nomina);
+            // ---------------------------------------
+
         } else {
             // Nascondi se non è responsabile
             if (respSection) respSection.classList.add('d-none');
