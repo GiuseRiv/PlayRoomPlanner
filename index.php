@@ -27,9 +27,8 @@ $routes = [
     'reports'       => __DIR__ . '/frontend/reports_view.php',
     'users_manage'  => __DIR__ . '/frontend/users_manage.php',
     'users_edit'    => __DIR__ . '/frontend/users_edit.php',
-    // NUOVO: dettagli prenotazione
     'booking_view'  => __DIR__ . '/frontend/booking_view.php',
-
+    'booking_edit'  => __DIR__ . '/frontend/booking_edit.php',
     // (opzionale) futuro: gestione iscritti tecnico
     // 'users_manage'  => __DIR__ . '/frontend/users_manage.php',
 ];
