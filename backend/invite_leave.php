@@ -17,14 +17,28 @@ if ($idPren <= 0) err('id_prenotazione mancante', 422);
 
 $uid = (int)$_SESSION['user_id'];
 
+
 try {
+  $stmt = $pdo->prepare("
+    SELECT p.data, p.ora_inizio 
+    FROM Prenotazione p JOIN invito i ON i.id_prenotazione = p.id_prenotazione 
+    WHERE i.id_iscritto = ? AND i.id_prenotazione = ? AND i.stato = 'accettato'
+  ");
+  $stmt->execute([$uid, $idPren]);
+  $inv = $stmt->fetch(PDO::FETCH_ASSOC);
+  if (!$inv) err('Nessuna accettazione attiva da rimuovere', 404);
+  
+  $dtInizio = new DateTime($inv['data'].' '.sprintf('%02d:00:00',$inv['ora_inizio']));
+  if ($dtInizio < new DateTime()) err('⏰ Impegno scaduto: non più modificabile', 410);
+  
   $stmt = $pdo->prepare("
     UPDATE invito
     SET stato='pendente', data_risposta=NOW()
     WHERE id_iscritto=? AND id_prenotazione=? AND stato='accettato'
   ");
   $stmt->execute([$uid, $idPren]);
-
+  
+  
   if ($stmt->rowCount() === 0) err('Nessuna disponibilità da rimuovere (invito non accettato?)', 409);
   ok(['message'=>'Rimosso']);
 } catch (Exception $e) {

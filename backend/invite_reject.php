@@ -22,6 +22,18 @@ $uid = (int)$_SESSION['user_id'];
 
 try {
   $stmt = $pdo->prepare("
+    SELECT p.data, p.ora_inizio, i.stato 
+    FROM Prenotazione p JOIN invito i ON i.id_prenotazione = p.id_prenotazione 
+    WHERE i.id_iscritto = ? AND i.id_prenotazione = ?
+  ");
+  $stmt->execute([$uid, $idPren]);
+  $inv = $stmt->fetch(PDO::FETCH_ASSOC);
+  if (!$inv || $inv['stato'] !== 'pendente') err('Invito non rifiutabile', 409);
+  
+  $dtInizio = new DateTime($inv['data'].' '.sprintf('%02d:00:00',$inv['ora_inizio']));
+  if ($dtInizio < new DateTime()) err('⏰ Impegno scaduto: non più gestibile', 410);
+  
+  $stmt = $pdo->prepare("
     UPDATE invito
     SET stato='rifiutato', data_risposta=NOW(), motivazione_rifiuto=?
     WHERE id_iscritto=? AND id_prenotazione=?

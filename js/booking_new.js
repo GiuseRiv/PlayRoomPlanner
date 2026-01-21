@@ -1,303 +1,296 @@
-const API_ROOMS = 'backend/rooms_bookable.php';
+'use strict';
+
+// NON serve più API_SECTORS, usiamo solo questa (che ora restituisce rooms + sectors):
+const API_ROOMS = 'backend/rooms_bookable.php'; 
 const API_BOOKINGS = 'backend/bookings.php';
 const API_INVITE_CREATE = 'backend/invite_create.php';
 const API_ROOM_BUSY = 'backend/room_day_busy.php';
 
-function esc(str) {
-  return String(str ?? '').replace(/[&<>"']/g, m => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[m]));
+// --- UTILS ---
+function esc(str) { return String(str ?? '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+
+function showAlert(type, text) { 
+    const box = document.getElementById('alertBox'); 
+    if(box) { 
+        box.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show">${esc(text)}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`; 
+        box.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+    } 
 }
 
-function showAlert(type, text) {
-  const box = document.getElementById('alertBox');
-  if (!box) return;
-  box.innerHTML = `
-    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-      ${esc(text)}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
-    </div>`;
+async function apiGet(url) { 
+    const res = await fetch(url, {credentials:'same-origin'}); 
+    const p = await res.json().catch(()=>({})); 
+    if(!res.ok||!p.ok) throw new Error(p.message||'Err'); 
+    return p.data??p; 
 }
 
-async function apiGet(url) {
-  const res = await fetch(url, { credentials: 'same-origin' }); // cookie sessione [web:137]
-  const payload = await res.json().catch(() => ({}));
-  if (!res.ok || payload.ok !== true) throw new Error(payload.message || 'Errore');
-  return payload.data ?? payload; 
+async function apiPost(url, body) { 
+    const res = await fetch(url, {
+        method:'POST',
+        credentials:'same-origin',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(body)
+    }); 
+    const p = await res.json().catch(()=>({})); 
+    if(!res.ok||!p.ok) throw new Error(p.message||'Err'); 
+    return p.data??p; 
 }
 
-async function apiPost(url, bodyObj) {
-  const res = await fetch(url, {
-    method: 'POST',
-    credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json; charset=utf-8' },
-    body: JSON.stringify(bodyObj || {})
-  });
-  const payload = await res.json().catch(() => ({}));
-  if (!res.ok || payload.ok !== true) throw new Error(payload.message || 'Errore richiesta');
-  return payload.data ?? payload;
+// --- LOGICA UI INVITI ---
+function updateInviteUI() {
+    const inviteMode = document.getElementById('inviteMode');
+    if(!inviteMode) return;
+
+    const mode = inviteMode.value;
+    const boxSimpleRole = document.getElementById('boxSimpleRole');
+    const boxSimpleSector = document.getElementById('boxSimpleSector');
+    const boxCustom = document.getElementById('boxCustom');
+    const simpleRoleSelect = document.getElementById('simpleRoleSelect');
+    const simpleSectorSelect = document.getElementById('simpleSectorSelect');
+
+    // Reset
+    if(boxSimpleRole) boxSimpleRole.style.display = 'none';
+    if(boxSimpleSector) boxSimpleSector.style.display = 'none';
+    if(boxCustom) boxCustom.style.display = 'none';
+    
+    if(simpleRoleSelect) simpleRoleSelect.required = false;
+    if(simpleSectorSelect) simpleSectorSelect.required = false;
+
+    if (mode === 'role') {
+        if(boxSimpleRole) boxSimpleRole.style.display = 'block';
+        if(simpleRoleSelect) simpleRoleSelect.required = true;
+    } else if (mode === 'sector') {
+        if(boxSimpleSector) boxSimpleSector.style.display = 'block';
+        if(simpleSectorSelect) simpleSectorSelect.required = true;
+    } else if (mode === 'custom') {
+        if(boxCustom) boxCustom.style.display = 'block';
+    }
 }
 
+// --- POPOLAMENTO DATI ---
 function fillRooms(rooms) {
-  const sel = document.getElementById('roomSelect');
-  sel.innerHTML = `<option value="">Seleziona una sala...</option>`;
-
-  rooms.forEach(r => {
-    const label = `${r.nome_settore} • ${r.nome_sala} (capienza ${r.capienza})`;
-    const opt = document.createElement('option');
-    opt.value = String(r.id_sala);
-    opt.textContent = label;
-
-    opt.dataset.settoreId = String(r.id_settore);
-    opt.dataset.settoreNome = String(r.nome_settore);
-
-    sel.appendChild(opt);
-  });
-}
-
-function fillSectorsFromRooms(rooms) {
-  const map = new Map();
-  rooms.forEach(r => map.set(String(r.id_settore), r.nome_settore));
-
-  const sel = document.getElementById('sectorSelect');
-  sel.innerHTML = `<option value="">Seleziona settore...</option>`;
-
-  [...map.entries()]
-    .sort((a,b)=>a[1].localeCompare(b[1]))
-    .forEach(([id, nome]) => {
-      const opt = document.createElement('option');
-      opt.value = id;
-      opt.textContent = nome;
-      sel.appendChild(opt);
+    const roomSelect = document.getElementById('roomSelect');
+    if(!roomSelect) return;
+    roomSelect.innerHTML = `<option value="">Seleziona una sala...</option>`;
+    rooms.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = String(r.id_sala);
+        opt.textContent = `${r.nome_settore} • ${r.nome_sala} (Cap: ${r.capienza})`;
+        roomSelect.appendChild(opt);
     });
 }
 
-function updateInviteModeUI() {
-  const mode = document.getElementById('inviteMode').value;
-  document.getElementById('sectorBox').style.display = (mode === 'sector') ? '' : 'none';
-  document.getElementById('roleBox').style.display = (mode === 'role') ? '' : 'none';
+function fillSectors(settori) {
+    const simpleSectorSelect = document.getElementById('simpleSectorSelect');
+    const customSectorsContainer = document.getElementById('customSectorsContainer');
+
+    if(simpleSectorSelect) {
+        simpleSectorSelect.innerHTML = `<option value="">Scegli settore...</option>`;
+        settori.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id_settore;
+            opt.textContent = s.nome;
+            simpleSectorSelect.appendChild(opt);
+        });
+    }
+
+    if(customSectorsContainer) {
+        if (settori.length === 0) {
+            customSectorsContainer.innerHTML = '<em class="text-muted">Nessun settore disponibile</em>';
+        } else {
+            customSectorsContainer.innerHTML = settori.map(s => `
+                <div class="form-check">
+                    <input class="form-check-input custom-sector" type="checkbox" value="${s.id_settore}" id="cxNewSec_${s.id_settore}">
+                    <label class="form-check-label" for="cxNewSec_${s.id_settore}">${s.nome}</label>
+                </div>
+            `).join('');
+        }
+    }
 }
 
-function todayISO() {
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth()+1).padStart(2,'0');
-  const dd = String(now.getDate()).padStart(2,'0');
-  return `${yyyy}-${mm}-${dd}`;
-}
+// --- DATE & TIME UTILS ---
+function todayISO() { const now = new Date(); return now.toISOString().split('T')[0]; }
 
 function minStartHourForDay(dayStr) {
-  const now = new Date();
-  const t = todayISO();
-  if (dayStr !== t) return 9;
-
-  const nextHour = now.getHours() + 1;
-  return Math.max(9, Math.min(23, nextHour));
+    const now = new Date(); const t = todayISO();
+    if (dayStr !== t) return 9;
+    const nextHour = now.getHours() + 1;
+    return Math.max(9, Math.min(23, nextHour));
 }
 
+// *** MODIFICA QUI: Nascondiamo le ore passate ***
 function fillStartHoursForDay(dayStr) {
-  const sel = document.getElementById('startSelect');
-  const minH = minStartHourForDay(dayStr);
+    const sel = document.getElementById('startSelect');
+    if(!sel) return;
+    
+    const minH = minStartHourForDay(dayStr);
+    
+    sel.innerHTML = `<option value="">Seleziona...</option>`;
+    
+    for (let h = 9; h <= 22; h++) {
+        // Se l'ora è inferiore al minimo consentito (passata), la saltiamo completamente
+        if (h < minH) continue; 
 
-  sel.innerHTML = `<option value="">Seleziona...</option>`;
-  for (let h = minH; h <= 22; h++) {
-    const opt = document.createElement('option');
-    opt.value = String(h);
-    opt.textContent = `${String(h).padStart(2,'0')}:00`;
-    sel.appendChild(opt);
-  }
+        const opt = document.createElement('option');
+        opt.value = String(h);
+        opt.textContent = `${String(h).padStart(2,'0')}:00`;
+        
+        sel.appendChild(opt);
+    }
 }
 
 function fillDurations(startHour) {
-  const sel = document.getElementById('durSelect');
-  sel.innerHTML = `<option value="">Seleziona...</option>`;
-  if (!startHour) return;
-
-  const h = parseInt(startHour, 10);
-  if (!Number.isFinite(h)) return;
-
-  const maxDur = Math.max(1, 23 - h);
-  for (let d = 1; d <= maxDur; d++) {
-    const opt = document.createElement('option');
-    opt.value = String(d);
-    opt.textContent = `${d}h`;
-    sel.appendChild(opt);
-  }
+    const sel = document.getElementById('durSelect');
+    if(!sel) return;
+    sel.innerHTML = `<option value="">Seleziona...</option>`;
+    if (!startHour) return;
+    const h = parseInt(startHour, 10);
+    if (!Number.isFinite(h)) return;
+    const maxDur = Math.max(1, 23 - h);
+    for (let d = 1; d <= maxDur; d++) sel.add(new Option(d+'h', d));
 }
 
 async function loadBusyHours(idSala, dateStr) {
-  if (!Number.isFinite(idSala) || idSala <= 0 || !dateStr) return [];
-  const url = `${API_ROOM_BUSY}?id_sala=${encodeURIComponent(idSala)}&date=${encodeURIComponent(dateStr)}`;
-  const data = await apiGet(url);
-  return Array.isArray(data.busy_hours) ? data.busy_hours : [];
+    if (!Number.isFinite(idSala) || idSala <= 0 || !dateStr) return [];
+    const url = `${API_ROOM_BUSY}?id_sala=${encodeURIComponent(idSala)}&date=${encodeURIComponent(dateStr)}`;
+    const data = await apiGet(url);
+    return Array.isArray(data.busy_hours) ? data.busy_hours : [];
 }
 
 function applyBusyToStartSelect(busyHours) {
-  const sel = document.getElementById('startSelect');
-  const busySet = new Set((busyHours || []).map(n => String(n)));
-
-  [...sel.options].forEach(opt => {
-    if (!opt.value) return;
-    if (busySet.has(opt.value)) {
-      opt.disabled = true;
-      if (!opt.textContent.includes('(occupata)')) {
-        opt.textContent = opt.textContent + ' (occupata)';
-      }
-    }
-  });
+    const sel = document.getElementById('startSelect');
+    if(!sel) return;
+    const busySet = new Set((busyHours || []).map(n => String(n)));
+    [...sel.options].forEach(opt => {
+        if (!opt.value) return;
+        if (busySet.has(opt.value)) {
+            opt.disabled = true;
+            if (!opt.textContent.includes('(occupata)')) opt.textContent += ' (occupata)';
+        }
+    });
 }
 
 async function refreshBusyUI() {
-  const roomSelectEl = document.getElementById('roomSelect');
-  const dateInputEl = document.getElementById('dateInput');
-  const startSelectEl = document.getElementById('startSelect');
-  const durSelectEl = document.getElementById('durSelect');
-
-  const idSala = parseInt(roomSelectEl.value, 10);
-  const dateStr = dateInputEl.value;
-
-  if (!Number.isFinite(idSala) || idSala <= 0 || !dateStr) {
+    const roomSelectEl = document.getElementById('roomSelect');
+    const dateInputEl = document.getElementById('dateInput');
+    const startSelectEl = document.getElementById('startSelect');
     
-    fillStartHoursForDay(dateStr || todayISO());
-    fillDurations('');
-    durSelectEl.value = '';
-    return;
-  }
+    if(!roomSelectEl || !dateInputEl || !startSelectEl) return;
 
-  const prevStart = startSelectEl.value;
+    const idSala = parseInt(roomSelectEl.value, 10);
+    const dateStr = dateInputEl.value;
 
-  fillStartHoursForDay(dateStr);
+    if (!Number.isFinite(idSala) || idSala <= 0 || !dateStr) {
+        fillStartHoursForDay(dateStr || todayISO()); 
+        fillDurations(''); 
+        return;
+    }
 
-  try {
-    const busy = await loadBusyHours(idSala, dateStr);
-    applyBusyToStartSelect(busy);
-  } catch (e) {
-    showAlert('warning', 'Non riesco a verificare le ore occupate (continua comunque).');
-  }
-
-  const opt = [...startSelectEl.options].find(o => o.value === prevStart);
-  startSelectEl.value = (opt && !opt.disabled) ? prevStart : '';
-
-  fillDurations(startSelectEl.value);
-  durSelectEl.value = '';
+    const prevStart = startSelectEl.value;
+    fillStartHoursForDay(dateStr);
+    
+    try {
+        const busy = await loadBusyHours(idSala, dateStr);
+        applyBusyToStartSelect(busy);
+    } catch (e) { console.warn(e); }
+    
+    // Se l'ora precedentemente selezionata è ora nascosta o disabilitata, resetta
+    const opt = [...startSelectEl.options].find(o => o.value === prevStart);
+    if (opt && !opt.disabled) { 
+        startSelectEl.value = prevStart; 
+        fillDurations(prevStart); 
+    } else { 
+        startSelectEl.value = ''; 
+        fillDurations(null); 
+    }
 }
 
+// --- INIT ---
 document.addEventListener('DOMContentLoaded', async () => {
-  const form = document.getElementById('bookingForm');
-  const inviteMode = document.getElementById('inviteMode');
-  const dateInput = document.getElementById('dateInput');
-  const startSelect = document.getElementById('startSelect');
-  const durSelect = document.getElementById('durSelect');
+    const form = document.getElementById('bookingForm');
+    const inviteMode = document.getElementById('inviteMode');
+    const dateInput = document.getElementById('dateInput');
+    const startSelect = document.getElementById('startSelect');
+    const roomSelect = document.getElementById('roomSelect');
+    
+    if(inviteMode) { inviteMode.addEventListener('change', updateInviteUI); updateInviteUI(); }
 
-  inviteMode.addEventListener('change', updateInviteModeUI);
-  updateInviteModeUI();
-
-  const t = todayISO();
-  dateInput.min = t;
-  if (!dateInput.value) dateInput.value = t;
-
-  fillStartHoursForDay(dateInput.value);
-  fillDurations(null);
-
-  dateInput.addEventListener('change', async () => {
-    const prevStart = startSelect.value;
-    fillStartHoursForDay(dateInput.value);
-
-    const stillExists = [...startSelect.options].some(o => o.value === prevStart);
-    startSelect.value = stillExists ? prevStart : '';
-    fillDurations(startSelect.value);
-    durSelect.value = '';
-
-    await refreshBusyUI();
-  });
-
-  startSelect.addEventListener('change', () => {
-    fillDurations(startSelect.value);
-    durSelect.value = '';
-  });
-
-  
-  try {
-    const data = await apiGet(API_ROOMS);
-    const rooms = data.rooms || [];
-
-    const roomSelectEl = document.getElementById('roomSelect');
-
-    if (!rooms.length) {
-      showAlert('warning', 'Nessuna sala prenotabile disponibile per il tuo account.');
-      roomSelectEl.innerHTML = `<option value="">Nessuna sala disponibile</option>`;
-    } else {
-      fillRooms(rooms);
-      fillSectorsFromRooms(rooms);
-
-      // seleziona prima sala automaticamente per evitare id_sala vuoto
-      roomSelectEl.value = String(rooms[0].id_sala);
-
-      await refreshBusyUI();
+    const t = todayISO();
+    if(dateInput) { 
+        dateInput.min = t; 
+        if (!dateInput.value) dateInput.value = t; 
+        fillStartHoursForDay(dateInput.value); 
+        dateInput.addEventListener('change', refreshBusyUI); 
     }
-  } catch (e) {
-    console.error(e);
-    showAlert('danger', e.message);
-    document.getElementById('roomSelect').innerHTML = `<option value="">Errore caricamento sale</option>`;
-  }
+    if(roomSelect) roomSelect.addEventListener('change', refreshBusyUI);
+    if(startSelect) startSelect.addEventListener('change', () => fillDurations(startSelect.value));
 
-  
-  document.getElementById('roomSelect').addEventListener('change', refreshBusyUI);
-
-  
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const fd = new FormData(form);
-
-    const id_sala = parseInt(fd.get('id_sala'), 10);
-    const data = String(fd.get('data') || '');
-    const ora_inizio = parseInt(fd.get('ora_inizio'), 10);
-    const durata_ore = parseInt(fd.get('durata_ore'), 10);
-    const attivita = fd.get('attivita')?.toString() ?? '';
-
-    if (!id_sala || !data || !ora_inizio || !durata_ore) {
-      showAlert('warning', 'Compila tutti i campi obbligatori.');
-      return;
-    }
-
-    const minH = minStartHourForDay(data);
-    if (ora_inizio < minH) {
-      showAlert('warning', `Per la data selezionata l'ora minima prenotabile è ${String(minH).padStart(2,'0')}:00.`);
-      return;
-    }
-
+    // CARICAMENTO SALE + SETTORI
     try {
-      const created = await apiPost(API_BOOKINGS, { id_sala, data, ora_inizio, durata_ore, attivita });
-      const id_prenotazione = created.id_prenotazione;
+        const data = await apiGet(API_ROOMS);
+        const rooms = data.rooms || [];
+        const sectors = data.sectors || [];
 
-      const mode = fd.get('invite_mode');
-
-      if (mode && mode !== 'none') {
-        const invitePayload = { id_prenotazione, mode };
-
-        if (mode === 'sector') {
-          const id_settore = parseInt(document.getElementById('sectorSelect').value, 10);
-          if (!id_settore) {
-            showAlert('warning', 'Seleziona un settore per gli inviti.');
-            return;
-          }
-          invitePayload.id_settore = id_settore;
+        if (!rooms.length) showAlert('warning', 'Nessuna sala disponibile.');
+        else {
+            fillRooms(rooms);
+            if(roomSelect) roomSelect.value = String(rooms[0].id_sala);
+            await refreshBusyUI();
         }
+        
+        fillSectors(sectors);
 
-        if (mode === 'role') {
-          const ruolo = document.getElementById('roleSelect').value;
-          invitePayload.ruolo = ruolo;
-        }
-
-        await apiPost(API_INVITE_CREATE, invitePayload);
-      }
-
-      showAlert('success', 'Prenotazione creata con successo.');
-      setTimeout(() => { window.location.href = 'index.php?page=dashboard'; }, 600);
-
-    } catch (err) {
-      showAlert('danger', err.message || 'Errore');
+    } catch (e) {
+        showAlert('danger', 'Errore caricamento dati: ' + e.message);
     }
-  });
+
+    // SUBMIT
+    if(form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fd = new FormData(form);
+
+            const bookingPayload = {
+                id_sala: fd.get('id_sala'),
+                data: fd.get('data'),
+                ora_inizio: fd.get('ora_inizio'),
+                durata_ore: fd.get('durata_ore'),
+                attivita: fd.get('attivita')
+            };
+
+            try {
+                const created = await apiPost(API_BOOKINGS, bookingPayload);
+                const id_prenotazione = created.id_prenotazione;
+
+                if(inviteMode && inviteMode.value !== 'none') {
+                    const mode = inviteMode.value;
+                    let inviteAll = (mode === 'all');
+                    let targetRoles = [];
+                    let targetSectors = [];
+
+                    if (mode === 'role') { 
+                        const r = document.getElementById('simpleRoleSelect').value; 
+                        if(r) targetRoles.push(r); 
+                    }
+                    else if (mode === 'sector') { 
+                        const s = document.getElementById('simpleSectorSelect').value; 
+                        if(s) targetSectors.push(s); 
+                    }
+                    else if (mode === 'custom') { 
+                        document.querySelectorAll('.custom-role:checked').forEach(cb => targetRoles.push(cb.value)); 
+                        document.querySelectorAll('.custom-sector:checked').forEach(cb => targetSectors.push(cb.value)); 
+                    }
+
+                    await apiPost(API_INVITE_CREATE, {
+                        id_prenotazione: id_prenotazione,
+                        invite_all: inviteAll,
+                        target_roles: targetRoles,
+                        target_sectors: targetSectors
+                    });
+                }
+                showAlert('success', 'Prenotazione creata con successo!');
+                setTimeout(() => { window.location.href = 'index.php?page=dashboard'; }, 800);
+            } catch (err) { showAlert('danger', err.message); }
+        });
+    }
 });

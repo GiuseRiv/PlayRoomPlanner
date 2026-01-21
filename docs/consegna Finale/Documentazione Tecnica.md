@@ -57,88 +57,97 @@ Lo schema ER utilizza entità, associazioni, gerarchie di ISA, identificatori mi
 #### 1.4.1 Nuovi Vincoli
 1. **Vincolo di autorizzazione alla creazione delle prenotazioni:** Solo gli iscritti che ricoprono il ruolo di responsabile di settore (o i tecnici) possono creare prenotazioni.
 #### 1.4.2 Nuove Assunzioni (cambiamento principale)
-1. Si assume che ogni responsabile di settore sia necessariamente un iscritto dell’associazione; pertanto non è stata tolta l’entità autonoma Responsabile, ma il ruolo di responsabile è modellato come relazione tra Iscritto e Settore con attributi propri.
+1. Il ruolo di responsabile è modellato come relazione tra Iscritto e Settore (tramite FK in Settore), senza entità autonoma, con attributi propri (anni_servizio, data_nomina).
 
-### 1.5 Dominio degli attributi
-#### 1. Entità: Iscritto (Utente)
+## 1.5 Dominio degli attributi
 
-Rappresenta tutti gli utenti del sistema. Il dominio del ruolo è vincolato per garantire la coerenza della logica RBAC (Role-Based Access Control).
+### 1. Entità: Iscritto
+**Rappresenta tutti gli utenti del sistema con logica RBAC.**
 
-id_iscritto: int (Auto-increment, Primary Key)
+| Attributo | Dominio | Vincoli |
+|-----------|---------|---------|
+| `id_iscritto` | `INT` | `AUTO_INCREMENT PRIMARY KEY` |
+| `nome` | `VARCHAR(50)` | `NOT NULL` |
+| `cognome` | `VARCHAR(50)` | `NOT NULL` |
+| `data_nascita` | `DATE` | `NOT NULL` |
+| `ruolo` | `ENUM('docente', 'allievo', 'tecnico')` | `NOT NULL DEFAULT 'allievo'` |
+| `email` | `VARCHAR(100)` | `UNIQUE NOT NULL` |
+| `password` | `VARCHAR(255)` | `NOT NULL` |
+| `foto` | `VARCHAR(255)` | `DEFAULT 'default.png'` |
 
-nome: string
+### 2. Entità: Settore
+**Macro-aree della Play Room con responsabile opzionale.**
 
-cognome: string
+| Attributo | Dominio | Vincoli |
+|-----------|---------|---------|
+| `id_settore` | `INT` | `AUTO_INCREMENT PRIMARY KEY` |
+| `nome` | `VARCHAR(50)` | `UNIQUE NOT NULL` |
+| `tipo` | `ENUM('musica', 'teatro', 'ballo')` | `NOT NULL` |
+| `id_responsabile` | `INT` | `FK → Iscritto.id_iscritto` |
+| `anni_servizio` | `INT` | `DEFAULT 0` |
+| `data_nomina` | `DATE` | - |
 
-email: string (Formato RFC 5322)
+### 3. Entità: Sala
+**Spazi fisici con capienza e appartenenza a settore.**
 
-password: string (Hash memorizzato come varchar(255))
+| Attributo | Dominio | Vincoli |
+|-----------|---------|---------|
+| `id_sala` | `INT` | `AUTO_INCREMENT PRIMARY KEY` |
+| `nome` | `VARCHAR(50)` | `NOT NULL` |
+| `capienza` | `INT` | `NOT NULL (> 0)` |
+| `id_settore` | `INT` | `NOT NULL FK → Settore.id_settore` |
+| **Combinato** | `(nome, id_settore)` | `UNIQUE` |
 
-data_nascita: date
+### 4. Entità: Dotazione
+**Tipologie di attrezzature condivise tra sale.**
 
-ruolo: dom_ruoli
+| Attributo | Dominio | Vincoli |
+|-----------|---------|---------|
+| `id_dotazione` | `INT` | `AUTO_INCREMENT PRIMARY KEY` |
+| `nome` | `VARCHAR(100)` | `NOT NULL` |
 
-dom_ruoli: {allievo, docente, tecnico}
+### 5. Entità: Prenotazione
+**Occupazione temporale di una sala con stato e organizzatore.**
 
-foto: string (Percorso URL o file path)
+| Attributo | Dominio | Vincoli |
+|-----------|---------|---------|
+| `id_prenotazione` | `INT` | `AUTO_INCREMENT PRIMARY KEY` |
+| `data` | `DATE` | `NOT NULL` |
+| `ora_inizio` | `INT` | `NOT NULL CHECK (BETWEEN 9 AND 23)` |
+| `durata_ore` | `INT` | `NOT NULL (> 0)` |
+| `attivita` | `VARCHAR(100)` | - |
+| `stato` | `ENUM('confermata', 'annullata')` | `DEFAULT 'confermata'` |
+| `data_creazione` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` |
+| `id_sala` | `INT` | `NOT NULL FK → Sala.id_sala` |
+| `id_organizzatore` | `INT` | `NOT NULL FK → Iscritto.id_iscritto` |
 
-#### 2. Entità: Settore
+### 6. Associazione: afferisce (Iscritto ↔ Settore N:M)
 
-Identifica le macro-aree della Play Room.
+| Attributo | Dominio | Vincoli |
+|-----------|---------|---------|
+| `id_iscritto` | `INT` | `FK → Iscritto.id_iscritto` |
+| `id_settore` | `INT` | `FK → Settore.id_settore` |
+| **PK** | `(id_iscritto, id_settore)` | `PRIMARY KEY` |
 
-id_settore: int
+### 7. Associazione: contiene (Sala ↔ Dotazione N:M)
 
-nome_settore: string (es: "Studio A", "Sala Prove 1")
+| Attributo | Dominio | Vincoli |
+|-----------|---------|---------|
+| `id_sala` | `INT` | `FK → Sala.id_sala` |
+| `id_dotazione` | `INT` | `FK → Dotazione.id_dotazione` |
+| **PK** | `(id_sala, id_dotazione)` | `PRIMARY KEY` |
 
-descrizione: text
+### 8. Associazione: invito (Iscritto ↔ Prenotazione N:M)
 
-#### 3. Entità: Sala
-
-id_sala: int
-
-nome_sala: string
-
-capienza: int (Valore > 0)
-
-#### 4. Entità: Dotazione
-
-id_dotazione: int
-
-nome_strumento: string
-
-stato_conservazione: dom_stato
-
-dom_stato: {nuovo, usato, danneggiato, in_riparazione}
-
-#### 5. Entità: Prenotazione
-
-Rappresenta l'occupazione di una sala in un determinato momento.
-
-id_prenotazione: int
-
-giorno_settimana: dom_giorno
-
-dom_giorno: {Lunedì, Martedì, Mercoledì, Giovedì, Venerdì, Sabato, Domenica}
-
-ora_inizio: time
-
-ora_fine: time (Vincolo: ora_fine > ora_inizio)
-
-#### 6. Associazione: Responsabile di (Associazione tra Iscritto e Settore)
-
-Relazione 1:1 tra Settore e Docente (Responsabile).
-
-data_nomina: date
-
-note: string
-
-#### 7. Associazione: Invito (Associazione tra Impegno e Allievo)
-
-Gestisce la partecipazione degli allievi alle sessioni create dai docenti.
-
-stato_accettazione: dom_accettazione
-
-dom_accettazione: {pendenza, accettato, rifiutato}
+| Attributo | Dominio | Vincoli |
+|-----------|---------|---------|
+| `id_iscritto` | `INT` | `FK → Iscritto.id_iscritto` |
+| `id_prenotazione` | `INT` | `FK → Prenotazione.id_prenotazione` |
+| `data_invio` | `DATE` | - |
+| `data_risposta` | `DATETIME` | - |
+| `stato` | `ENUM('accettato', 'rifiutato', 'pendente')` | `DEFAULT 'pendente'` |
+| `motivazione_rifiuto` | `TEXT` | - |
+| **PK** | `(id_iscritto, id_prenotazione)` | `PRIMARY KEY` |
 
 
 ## 2. Progettazione Logica e Comandi SQL

@@ -121,63 +121,65 @@
   }
 
   async function loadWeekBookings() {
-    clearError();
+  clearError();
 
-    const idSala = roomSelect.value;
-    const day = dayInput.value;
+  const idSala = roomSelect.value;
+  const day = dayInput.value;
 
-    if (!idSala) {
-      showError('Seleziona una sala.');
-      return;
-    }
-    if (!day) {
-      showError('Seleziona un giorno.');
-      return;
-    }
-
-    tbody.innerHTML = `<tr><td colspan="4" class="text-muted">Caricamento…</td></tr>`;
-
-    try {
-      const url = `${WEEK_API}?id_sala=${encodeURIComponent(idSala)}&day=${encodeURIComponent(day)}`;
-      const res = await fetch(url, { credentials: 'same-origin' });
-      const json = await res.json();
-
-      if (!res.ok || !json.ok) throw new Error(json.message || 'Errore nel caricamento delle prenotazioni');
-
-      const bookings = (json.data && json.data.bookings) ? json.data.bookings : [];
-      if (bookings.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="text-muted">Nessuna prenotazione in questa settimana.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = bookings.map(b => {
-        const when = escapeHtml(
-          b.when ??
-          ((b.data || '') + (b.ora_inizio != null ? (' ' + String(b.ora_inizio).padStart(2, '0') + ':00') : ''))
-        );
-
-        const att = escapeHtml(b.attivita ?? '-');
-        const org = escapeHtml(b.organizzatore ?? '-');
-
-        const dur = escapeHtml(
-          (b.durata_ore != null) ? `${b.durata_ore}h` : '-'
-        );
-
-        return `
-          <tr>
-            <td>${when}</td>
-            <td>${att}</td>
-            <td>${org}</td>
-            <td class="text-end">${dur}</td>
-          </tr>
-        `;
-      }).join('');
-
-    } catch (e) {
-      tbody.innerHTML = '';
-      showError(e.message);
-    }
+  if (!idSala) {
+    showError('Seleziona una sala.');
+    return;
   }
+  if (!day) {
+    showError('Seleziona un giorno.');
+    return;
+  }
+
+  tbody.innerHTML = `<tr><td colspan="4" class="text-muted">Caricamento…</td></tr>`;
+
+  try {
+    const url = `${WEEK_API}?id_sala=${encodeURIComponent(idSala)}&day=${encodeURIComponent(day)}`;
+    const res = await fetch(url, { credentials: 'same-origin' });
+    const json = await res.json();
+
+    if (!res.ok || !json.ok) throw new Error(json.message || 'Errore nel caricamento delle prenotazioni');
+
+    const bookings = (json.data && json.data.bookings) ? json.data.bookings : [];
+    if (bookings.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" class="text-muted">Nessuna prenotazione in questa settimana.</td></tr>`;
+      return;
+    }
+
+    // 🔧 NUOVA LOGICA PASSATO
+    tbody.innerHTML = bookings.map(b => {
+      const dtInizio = new Date(`${b.data || ''}T${String(b.ora_inizio || 0).padStart(2,'0')}:00:00`);
+      const passato = dtInizio < new Date();
+      
+      const when = escapeHtml(b.when || ((b.data || '') + (b.ora_inizio != null ? (' ' + String(b.ora_inizio).padStart(2, '0') + ':00') : '')));
+      const att = escapeHtml(b.attivita ?? '-');
+      const org = escapeHtml(b.organizzatore ?? '-');
+      const dur = escapeHtml((b.durata_ore != null) ? `${b.durata_ore}h` : '-');
+      
+      const azioni = passato 
+        ? '<span class="text-muted small fst-italic">Passato</span>'
+        : `<a href="index.php?page=booking_edit&id=${b.id_prenotazione}" class="btn btn-sm btn-outline-primary">Modifica</a>`;
+
+      return `
+        <tr>
+          <td>${when}</td>
+          <td>${att}</td>
+          <td>${org}</td>
+          <td class="text-end">${dur} ${azioni}</td>
+        </tr>
+      `;
+    }).join('');
+
+  } catch (e) {
+    tbody.innerHTML = '';
+    showError(e.message);
+  }
+}
+
 
   // default: oggi
   dayInput.valueAsDate = new Date();

@@ -52,14 +52,27 @@ async function apiPost(url, bodyObj) {
 
 
 function renderRow(inv) {
-  const stato = inv.stato_invito || '';
-  let badge = 'secondary';
-  if (stato === 'pendente') badge = 'warning';
-  if (stato === 'accettato') badge = 'success';
-  if (stato === 'rifiutato') badge = 'danger';
+  const stato = inv.stato_effettivo || inv.stato_invito || '';
+  
+  // 🔧 CALCOLA se passato (indipendente dallo stato)
+  const dtInizio = new Date(`${inv.data}T${String(inv.ora_inizio).padStart(2,'0')}:00:00`);
+  const oraPassata = dtInizio < new Date();
+  
+  // 🔧 BADGE: stato ORIGINALE (accettato/rifiutato/pendente/scaduto)
+  let badge = 'secondary', label = stato;
+  if (stato === 'pendente') { badge = 'warning'; label = '⏳ Pendente'; }
+  if (stato === 'scaduto')  { badge = 'dark';   label = '⏰ Scaduto'; }
+  if (stato === 'accettato'){ badge = 'success';label = '✅ Accettato'; }
+  if (stato === 'rifiutato'){ badge = 'danger'; label = '❌ Rifiutato'; }
 
   let actions = '';
-  if (stato === 'pendente') {
+  
+  // 🔧 SE PASSATO → "Passato" nelle azioni (ZERO bottoni)
+  if (oraPassata) {
+    actions = `<span class="text-muted small fst-italic">Passato</span>`;
+  }
+  // 🔧 SOLO FUTURO → bottoni per stato
+  else if (stato === 'pendente') {
     actions = `
       <button class="btn btn-sm btn-success me-1" data-action="accept" data-id="${inv.id_prenotazione}">
         Accetta
@@ -85,11 +98,13 @@ function renderRow(inv) {
       <td>${esc(inv.durata_ore)}h</td>
       <td>${esc(inv.nome_sala)}</td>
       <td>${esc(inv.attivita ?? '')}</td>
-      <td><span class="badge text-bg-${badge}">${esc(stato)}</span></td>
-      <td class="text-end">${actions}</td>
+      <td><span class="badge bg-${badge}">${label}</span></td>  <!-- 🔧 Stato ORIGINALE -->
+      <td class="text-end">${actions}</td>                       <!-- 🔧 "Passato" se scaduto -->
     </tr>
   `;
 }
+
+
 
 async function loadInvites() {
   const tbody = document.getElementById('invitesTbody');

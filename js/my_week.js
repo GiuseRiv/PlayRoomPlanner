@@ -21,7 +21,11 @@ let allRows = [];
 function renderRows(rows) {
   const tbody = document.getElementById('weekTbody');
   tbody.innerHTML = rows.length 
-    ? rows.map(r => `
+  ? rows.map(r => {
+      const dtInizio = new Date(`${r.data}T${r.ora.slice(0,2)}:00:00`);
+      const passato = dtInizio < new Date();
+      
+      return `
       <tr>
         <td>${r.data}</td>
         <td>${r.ora}</td>
@@ -29,15 +33,15 @@ function renderRows(rows) {
         <td>${r.sala}</td>
         <td>${r.attivita}</td>
         <td>${r.organizzatore}</td>
-        <td>${badgeHtml(r.stato_invito)}</td>
+        <td>${badgeHtml(r.stato_effettivo || r.stato_invito)}</td>
         <td class="text-end">
-          ${r.can_cancel ? 
+          ${r.can_cancel && !passato ?
             `<button class="btn btn-sm btn-outline-danger cancel-btn" data-id="${r.id_prenotazione}">Annulla</button>` : 
-            '—'}
+            (passato ? '<span class="text-muted small">Passato</span>' : '—')}
         </td>
-      </tr>
-    `).join('')
-    : '<tr><td colspan="8" class="text-muted text-center py-4">Nessun impegno</td></tr>';
+      </tr>`;
+    }).join('')
+  : '<tr><td colspan="8" class="text-muted text-center py-4">Nessun impegno</td></tr>';
 }
 
 function badgeHtml(stato) {
@@ -93,15 +97,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const textFilter = document.getElementById('textFilter');
   const tbody = document.getElementById('weekTbody');
   
-  // Eventi
+  
   form.onsubmit = e => { e.preventDefault(); loadWeek(dayInput.value); };
   document.getElementById('btnRefresh').onclick = () => loadWeek(dayInput.value);
   statusFilter.onchange = textFilter.oninput = applyFilters;
   
-  // Load iniziale
+ 
   if (dayInput.value) loadWeek(dayInput.value);
   
-  // Cancel buttons
   tbody.addEventListener('click', async e => {
     const btn = e.target.closest('.cancel-btn');
     if (!btn) return;

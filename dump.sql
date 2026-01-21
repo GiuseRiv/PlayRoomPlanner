@@ -147,13 +147,13 @@ INSERT INTO contiene VALUES
 
 
 INSERT INTO Prenotazione (data, ora_inizio, durata_ore, attivita, stato, id_sala, id_organizzatore) VALUES
-('2025-02-01', 10, 2, 'Prove Band', 'confermata', 1, 1),
-('2025-02-03', 9, 2, 'Prove orchestra', 'confermata', 3, 5),
-('2025-02-03', 14, 3, 'Prove rock', 'confermata', 4, 1),
-('2025-02-04', 16, 2, 'Laboratorio teatrale', 'confermata', 5, 3),
-('2025-02-05', 10, 2, 'Lezione danza', 'confermata', 7, 7),
-('2025-02-06', 18, 2, 'Sound check', 'confermata', 4, 1),
-('2025-02-07', 20, 2, 'Prove spettacolo', 'annullata', 6, 3);
+('2026-02-01', 10, 2, 'Prove Band', 'confermata', 1, 1),
+('2026-02-03', 9, 2, 'Prove orchestra', 'confermata', 3, 5),
+('2026-02-03', 14, 3, 'Prove rock', 'confermata', 4, 1),
+('2026-02-04', 16, 2, 'Laboratorio teatrale', 'confermata', 5, 3),
+('2026-02-05', 10, 2, 'Lezione danza', 'confermata', 7, 7),
+('2026-02-06', 18, 2, 'Sound check', 'confermata', 4, 1),
+('2026-02-07', 20, 2, 'Prove spettacolo', 'annullata', 6, 3);
 
 
 INSERT INTO invito (id_iscritto, id_prenotazione, data_invio, data_risposta, stato, motivazione_rifiuto) VALUES
