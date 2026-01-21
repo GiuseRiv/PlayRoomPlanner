@@ -86,7 +86,7 @@ function can_book_room(PDO $pdo, int $uid, int $idSala): bool {
 
 /**
  * Verifica se la SALA è occupata da altri eventi.
- * Usa logica overlap stretta: (StartA < EndB) AND (EndA > StartB)
+ * (StartA < EndB) AND (EndA > StartB)
  */
 function check_room_overlap(PDO $pdo, int $idSala, string $data, int $oraInizio, int $durata, ?int $excludeId = null): void {
     $oraFine = $oraInizio + $durata;
@@ -119,7 +119,6 @@ function check_room_overlap(PDO $pdo, int $idSala, string $data, int $oraInizio,
 
 /**
  * Verifica se l'ORGANIZZATORE è impegnato in altri eventi (come organizzatore o invitato).
- * Usa logica overlap stretta.
  */
 function check_organizer_overlap(PDO $pdo, int $uid, string $data, int $oraInizio, int $durata, ?int $excludeId = null): void {
     $oraFine = $oraInizio + $durata;
@@ -171,12 +170,10 @@ try {
             $row = $st->fetch(PDO::FETCH_ASSOC);
             if (!$row) err('Prenotazione non trovata', 404);
             
-            // Verifica permessi visualizzazione (opzionale, ma buona prassi)
-            // Se tecnico vede tutto, altrimenti solo le proprie? 
-            // Per ora lasciamo invariato come da tua logica originale
+            
             ok($row);
         } else {
-            // Ritorna le prenotazioni dell'utente (come organizzatore)
+            
             $st = $pdo->prepare("
                 SELECT p.*, s.nome AS nome_sala
                 FROM Prenotazione p

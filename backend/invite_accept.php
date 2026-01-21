@@ -27,7 +27,6 @@ $uid = (int)$_SESSION['user_id'];
 try {
   $pdo->beginTransaction();
 
-  // 🔧 1. VERIFICA SCADUTO + STATO PENDENTE
   $stmt = $pdo->prepare("
     SELECT i.stato, p.data, p.ora_inizio
     FROM invito i
@@ -41,11 +40,9 @@ try {
   if (!$inv) err('Invito non trovato', 404);
   if ($inv['stato'] !== 'pendente') err('Invito già gestito', 409);
   
-  // 🔧 CALCOLO SCADUTO
   $dtInizio = new DateTime($inv['data'] . ' ' . sprintf('%02d:00:00', $inv['ora_inizio']));
-  if ($dtInizio < new DateTime()) err('⏰ Impegno scaduto: non più accettabile', 410);
+  if ($dtInizio < new DateTime()) err('Impegno scaduto', 410);
 
-  // 2. VERIFICA CAPienza (corretto tuo codice)
   $stmt = $pdo->prepare("
     SELECT p.id_prenotazione, p.data, p.ora_inizio, p.durata_ore, p.id_sala, s.capienza
     FROM Prenotazione p JOIN Sala s ON s.id_sala = p.id_sala
@@ -60,10 +57,14 @@ try {
     FROM invito WHERE id_prenotazione = ? AND stato = 'accettato'
   ");
   $stmt->execute([$idPren]);
-  $nAcc = 1 + (int)$stmt->fetch()['n_accettati']; // +1 per organizzatore
-  if ($nAcc > (int)$p['capienza']) err('Posti esauriti (' . $nAcc . '/' . $p['capienza'] . ')', 409);
+  
+  $invitatiGiaAccettati = (int)$stmt->fetch()['n_accettati'];
+  $occupatiAttuali = 1 + $invitatiGiaAccettati;
 
-  // 3. VERIFICA SOVRAPPOSIZIONI (corretto tuo codice)
+  if (($occupatiAttuali + 1) > (int)$p['capienza']) {
+      err('Posti esauriti (' . $occupatiAttuali . '/' . $p['capienza'] . ')', 409);
+  }
+
   $stmt = $pdo->prepare("
     SELECT 1 FROM Prenotazione p2
     JOIN invito i2 ON i2.id_prenotazione = p2.id_prenotazione
@@ -79,7 +80,6 @@ try {
   $stmt->execute([$uid, $p['data'], (int)$p['ora_inizio'], (int)$p['ora_inizio'], (int)$p['durata_ore']]);
   if ($stmt->fetch()) err('Hai già un impegno sovrapposto quel giorno', 409);
 
-  // 4. UPDATE
   $stmt = $pdo->prepare("
     UPDATE invito 
     SET stato = 'accettato', data_risposta = NOW(), motivazione_rifiuto = NULL
@@ -88,11 +88,10 @@ try {
   $stmt->execute([$uid, $idPren]);
 
   $pdo->commit();
-  ok(['message' => '✅ Invito accettato con successo']);
+  ok(['message' => 'Invito accettato con successo']);
   
 } catch (Exception $e) {
   if ($pdo->inTransaction()) $pdo->rollBack();
-  error_log('Accept error: ' . $e->getMessage());
-  err('Errore server interno', 500);
+  err('Errore server', 500);
 }
 ?>

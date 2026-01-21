@@ -1,23 +1,26 @@
-<?php declare(strict_types=1);
+<?php
+declare(strict_types=1);
+
 require_once __DIR__ . '/../common/config.php';
 require_once __DIR__ . '/../common/api_auth.php';
 
-ob_clean(); 
 header('Content-Type: application/json; charset=utf-8');
 
-function ok($data){ echo json_encode(['ok'=>true,'data'=>$data]); exit; }
-function err($m,$c=400){ http_response_code($c); echo json_encode(['ok'=>false,'message'=>$m]); exit; }
+function ok($data=null, int $code=200): void { http_response_code($code); echo json_encode(['ok'=>true,'data'=>$data]); exit; }
+function err(string $m, int $code=400): void { http_response_code($code); echo json_encode(['ok'=>false,'message'=>$m]); exit; }
 
 $method = $_SERVER['REQUEST_METHOD'];
-$ruoloSessione = $_SESSION['user_ruolo'] ?? '';
+$uid = (int)($_SESSION['user_id'] ?? 0);
+$userRole = $_SESSION['user_ruolo'] ?? '';
 
+if (!in_array($userRole, ['tecnico', 'docente'])) {
+    err('Accesso negato', 403);
+}
 
-if ($method === 'GET') {
-    if (!in_array($ruoloSessione, ['tecnico', 'docente'])) err('Accesso negato', 403);
-
-    
-    if (isset($_GET['info_settori'])) {
-        try {
+try {
+    if ($method === 'GET') {
+        
+        if (isset($_GET['info_settori'])) {
             $sql = "SELECT s.id_settore, s.nome, s.id_responsabile, 
                            CONCAT(i.nome, ' ', i.cognome) as nome_responsabile
                     FROM Settore s
@@ -25,169 +28,204 @@ if ($method === 'GET') {
                     ORDER BY s.nome ASC";
             $stmt = $pdo->query($sql);
             ok($stmt->fetchAll(PDO::FETCH_ASSOC));
-        } catch (Exception $e) {
-            err('Errore settori: ' . $e->getMessage());
         }
-    }
 
-    
-    if (!isset($_GET['id'])) {
-        try {
-            $roleFilter = $_GET['role'] ?? '';
-            $search = trim($_GET['search'] ?? '');
-            $sector = (int)($_GET['sector'] ?? 0);
-
+        if (isset($_GET['id'])) {
+            $id = (int)$_GET['id'];
+            
             $sql = "
-              SELECT 
-                u.id_iscritto, u.nome, u.cognome, u.ruolo, u.email, u.foto,
-                GROUP_CONCAT(DISTINCT s.nome SEPARATOR ', ') AS settori
+              SELECT u.id_iscritto, u.nome, u.cognome, u.ruolo, u.email, u.data_nascita, u.foto,
+                     GROUP_CONCAT(DISTINCT s.nome SEPARATOR ', ') AS settori_nomi,
+                     GROUP_CONCAT(DISTINCT s.id_settore) AS settori_ids
               FROM Iscritto u 
               LEFT JOIN afferisce a ON a.id_iscritto = u.id_iscritto
               LEFT JOIN Settore s ON s.id_settore = a.id_settore
+              WHERE u.id_iscritto = ?
+              GROUP BY u.id_iscritto
             ";
-            $params = [];
-            $where = [];
-
-            if ($roleFilter) { $where[] = 'u.ruolo = ?'; $params[] = $roleFilter; }
-            if ($search) { 
-              $where[] = "(u.nome LIKE ? OR u.cognome LIKE ? OR u.email LIKE ?)"; 
-              $s = "%$search%";
-              $params[] = $s; $params[] = $s; $params[] = $s; 
-            }
-            if ($sector) { $where[] = 'a.id_settore = ?'; $params[] = $sector; }
-
-            if ($where) $sql .= ' WHERE ' . implode(' AND ', $where);
-            $sql .= ' GROUP BY u.id_iscritto ORDER BY u.cognome, u.nome';
-
+            
             $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
-            ok($stmt->fetchAll(PDO::FETCH_ASSOC));
-        } catch (Exception $e) {
-            err('Errore lista: ' . $e->getMessage());
-        }
-    }
+            $stmt->execute([$id]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    
-    $id = (int)$_GET['id'];
-    try {
+            if (!$user) err('Utente non trovato', 404);
+
+            $stmtResp = $pdo->prepare("SELECT id_settore, data_nomina, anni_servizio FROM Settore WHERE id_responsabile = ?");
+            $stmtResp->execute([$id]);
+            $respData = $stmtResp->fetch(PDO::FETCH_ASSOC);
+
+            if ($respData) {
+                $user['is_responsabile'] = true;
+                $user['responsabile_id_settore'] = $respData['id_settore'];
+                $user['data_nomina'] = $respData['data_nomina'];
+                $user['anni_servizio'] = $respData['anni_servizio'];
+            } else {
+                $user['is_responsabile'] = false;
+                $user['responsabile_id_settore'] = null;
+                $user['data_nomina'] = null;
+                $user['anni_servizio'] = 0;
+            }
+
+            ok($user);
+        }
+
+        $roleFilter = $_GET['role'] ?? '';
+        $search = trim($_GET['search'] ?? '');
+        $sector = (int)($_GET['sector'] ?? 0);
+
         $sql = "
-          SELECT u.id_iscritto, u.nome, u.cognome, u.ruolo, u.email, u.data_nascita, u.foto,
-                 GROUP_CONCAT(DISTINCT s.nome SEPARATOR ', ') AS settori_nomi,
-                 GROUP_CONCAT(DISTINCT s.id_settore) AS settori_ids
+          SELECT 
+            u.id_iscritto, u.nome, u.cognome, u.ruolo, u.email, u.foto,
+            GROUP_CONCAT(DISTINCT s.nome SEPARATOR ', ') AS settori
           FROM Iscritto u 
           LEFT JOIN afferisce a ON a.id_iscritto = u.id_iscritto
           LEFT JOIN Settore s ON s.id_settore = a.id_settore
-          WHERE u.id_iscritto = ?
-          GROUP BY u.id_iscritto
         ";
-        
+        $params = [];
+        $where = [];
+
+        if ($roleFilter) { $where[] = 'u.ruolo = ?'; $params[] = $roleFilter; }
+        if ($search) { 
+          $where[] = "(u.nome LIKE ? OR u.cognome LIKE ? OR u.email LIKE ?)"; 
+          $s = "%$search%";
+          $params[] = $s; $params[] = $s; $params[] = $s; 
+        }
+        if ($sector) { $where[] = 'a.id_settore = ?'; $params[] = $sector; }
+
+        if ($where) $sql .= ' WHERE ' . implode(' AND ', $where);
+        $sql .= ' GROUP BY u.id_iscritto ORDER BY u.cognome, u.nome';
+
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$id]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$user) err('Utente non trovato', 404);
-
-        
-        $stmtResp = $pdo->prepare("SELECT id_settore, data_nomina, anni_servizio FROM Settore WHERE id_responsabile = ?");
-        $stmtResp->execute([$id]);
-        $respData = $stmtResp->fetch(PDO::FETCH_ASSOC);
-
-        if ($respData) {
-            $user['is_responsabile'] = true;
-            $user['responsabile_id_settore'] = $respData['id_settore'];
-            $user['data_nomina'] = $respData['data_nomina'];
-            $user['anni_servizio'] = $respData['anni_servizio'];
-        } else {
-            $user['is_responsabile'] = false;
-            $user['responsabile_id_settore'] = null;
-            $user['data_nomina'] = null;
-            $user['anni_servizio'] = 0;
-        }
-
-        ok($user);
-    } catch (Exception $e) {
-        err('Errore utente: ' . $e->getMessage());
+        $stmt->execute($params);
+        ok($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
-}
 
+    if ($method === 'PUT') {
+        if ($userRole !== 'tecnico') err('Solo i tecnici possono modificare', 403);
 
-if ($method === 'PUT') {
-    if ($ruoloSessione !== 'tecnico') err('Solo i tecnici possono modificare', 403);
-
-    $id = (int)($_GET['id'] ?? 0);
-    $input = json_decode(file_get_contents('php://input'), true);
-    
-    $nuovoRuolo = $input['ruolo'] ?? '';
-    $nuoviSettoriIds = $input['settori'] ?? []; 
-    $diventaResponsabile = $input['is_responsabile'] ?? false;
-    $idSettoreResp = (int)($input['id_settore_responsabilita'] ?? 0);
-    $dataOggi = date('Y-m-d'); 
-
-    if (!in_array($nuovoRuolo, ['allievo', 'docente', 'tecnico'])) err('Ruolo non valido');
-
-    try {
-        $pdo->beginTransaction();
-
+        $id = (int)($_GET['id'] ?? 0);
+        $input = json_decode(file_get_contents('php://input'), true);
         
-        $pdo->prepare("UPDATE Iscritto SET ruolo = ? WHERE id_iscritto = ?")->execute([$nuovoRuolo, $id]);
-        $pdo->prepare("DELETE FROM afferisce WHERE id_iscritto = ?")->execute([$id]);
+        if ($id <= 0) err('ID mancante');
+
+        $nuovoRuolo = $input['ruolo'] ?? '';
+        $nuoviSettoriIds = $input['settori'] ?? [];
+        $attivaNomina = $input['is_responsabile'] ?? false; 
+        $targetSettoreResp = (int)($input['id_settore_responsabilita'] ?? 0);
         
-        $idsDaIns = [];
-        if ($nuovoRuolo === 'tecnico') {
-            $idsDaIns = $pdo->query("SELECT id_settore FROM Settore")->fetchAll(PDO::FETCH_COLUMN);
-            $diventaResponsabile = false; 
-        } else {
-            $idsDaIns = $nuoviSettoriIds;
-        }
+        if (!in_array($nuovoRuolo, ['allievo', 'docente', 'tecnico'])) err('Ruolo non valido');
 
-        if ($diventaResponsabile && $idSettoreResp > 0 && !in_array($idSettoreResp, $idsDaIns)) {
-            $idsDaIns[] = $idSettoreResp;
-        }
+        try {
+            $pdo->beginTransaction();
 
-        if (!empty($idsDaIns)) {
-            $ins = $pdo->prepare("INSERT INTO afferisce (id_iscritto, id_settore) VALUES (?, ?)");
-            foreach ($idsDaIns as $sid) $ins->execute([$id, $sid]);
-        }
+            $stmtSnap = $pdo->prepare("SELECT id_settore FROM Settore WHERE id_responsabile = ?");
+            $stmtSnap->execute([$id]);
+            $currentRespId = (int)$stmtSnap->fetchColumn(); 
 
-        
-        $pdo->prepare("UPDATE Settore SET id_responsabile = NULL, data_nomina = NULL WHERE id_responsabile = ?")
-            ->execute([$id]);
-
-        
-        if ($nuovoRuolo === 'docente' && $diventaResponsabile && $idSettoreResp) {
+            $pdo->prepare("UPDATE Iscritto SET ruolo = ? WHERE id_iscritto = ?")->execute([$nuovoRuolo, $id]);
             
-            $pdo->prepare("UPDATE Settore SET id_responsabile = NULL, data_nomina = NULL WHERE id_settore = ?")
-                ->execute([$idSettoreResp]);
+            // Logica Responsabilità
+            if ($nuovoRuolo !== 'docente') {
+                if ($currentRespId > 0) {
+                    $pdo->prepare("UPDATE Settore SET id_responsabile = NULL, data_nomina = NULL, anni_servizio = 0 WHERE id_settore = ?")
+                        ->execute([$currentRespId]);
+                }
+                $currentRespId = 0; 
+            } else {
+                if ($attivaNomina === true && $targetSettoreResp > 0) {
+                    if ($targetSettoreResp !== $currentRespId) {
+                        if ($currentRespId > 0) {
+                            $pdo->prepare("UPDATE Settore SET id_responsabile = NULL, data_nomina = NULL, anni_servizio = 0 WHERE id_settore = ?")
+                                ->execute([$currentRespId]);
+                        }
+                        $pdo->prepare("UPDATE Settore SET id_responsabile = NULL, data_nomina = NULL, anni_servizio = 0 WHERE id_settore = ?")
+                            ->execute([$targetSettoreResp]);
 
+                        $dataOggi = date('Y-m-d');
+                        $pdo->prepare("UPDATE Settore SET id_responsabile = ?, data_nomina = ?, anni_servizio = 0 WHERE id_settore = ?")
+                            ->execute([$id, $dataOggi, $targetSettoreResp]);
+                        
+                        $currentRespId = $targetSettoreResp; 
+                    }
+                }
+            }
+
+            // Logica Competenze (Afferisce)
+            $pdo->prepare("DELETE FROM afferisce WHERE id_iscritto = ?")->execute([$id]);
             
-            $pdo->prepare("UPDATE Settore SET id_responsabile = ?, data_nomina = ?, anni_servizio = 0 WHERE id_settore = ?")
-                ->execute([$id, $dataOggi, $idSettoreResp]);
+            $idsDaIns = [];
+            if ($nuovoRuolo === 'tecnico') {
+                $idsDaIns = $pdo->query("SELECT id_settore FROM Settore")->fetchAll(PDO::FETCH_COLUMN);
+            } else {
+                $idsDaIns = array_map('intval', (array)$nuoviSettoriIds);
+            }
+
+            if ($currentRespId > 0 && !in_array($currentRespId, $idsDaIns)) {
+                $idsDaIns[] = $currentRespId;
+            }
+
+            if (!empty($idsDaIns)) {
+                $ins = $pdo->prepare("INSERT IGNORE INTO afferisce (id_iscritto, id_settore) VALUES (?, ?)");
+                foreach ($idsDaIns as $sid) {
+                    if($sid > 0) $ins->execute([$id, $sid]);
+                }
+            }
+
+            $pdo->commit();
+            ok(['message' => 'Utente aggiornato con successo']);
+
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            err('Errore aggiornamento: ' . $e->getMessage());
+        }
+    }
+
+    if ($method === 'DELETE') {
+        if ($userRole !== 'tecnico') err('Solo i tecnici possono eliminare', 403);
+        
+        $id = (int)($_GET['id'] ?? 0);
+        if ($id === 0) {
+            $input = json_decode(file_get_contents('php://input'), true);
+            $id = (int)($input['id'] ?? 0);
         }
 
-        $pdo->commit();
-        ok(['message' => 'Salvato con successo']);
+        if ($id <= 0) err('ID non valido');
+        if ($id === $uid) err('Non puoi auto-eliminarti');
 
-    } catch (Exception $e) {
-        if ($pdo->inTransaction()) $pdo->rollBack();
-        err($e->getMessage());
+        try {
+            $pdo->beginTransaction();
+
+            $pdo->prepare("UPDATE Settore SET id_responsabile = NULL, data_nomina = NULL, anni_servizio = 0 WHERE id_responsabile = ?")
+                ->execute([$id]);
+
+            $pdo->prepare("DELETE FROM afferisce WHERE id_iscritto = ?")->execute([$id]);
+            $pdo->prepare("DELETE FROM invito WHERE id_iscritto = ?")->execute([$id]);
+            
+            $pdo->prepare("
+                DELETE FROM invito 
+                WHERE id_prenotazione IN (SELECT id_prenotazione FROM Prenotazione WHERE id_organizzatore = ?)
+            ")->execute([$id]);
+
+            $pdo->prepare("DELETE FROM Prenotazione WHERE id_organizzatore = ?")->execute([$id]);
+
+            $stmt = $pdo->prepare("DELETE FROM Iscritto WHERE id_iscritto = ?");
+            $stmt->execute([$id]);
+
+            if ($stmt->rowCount() === 0) {
+                $pdo->rollBack(); 
+                err('Utente non trovato o già eliminato', 404);
+            }
+
+            $pdo->commit();
+            ok(['message' => 'Utente e tutti i dati collegati eliminati definitivamente.']);
+
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            err('Errore Server: ' . $e->getMessage());
+        }
     }
-}
 
-
-if ($method === 'DELETE') {
-    if ($ruoloSessione !== 'tecnico') err('Solo i tecnici possono eliminare', 403);
-    $id = (int)($_GET['id'] ?? 0);
-    if ($id <= 0 || $id == $_SESSION['user_id']) err('ID non valido');
-
-    try {
-        $pdo->beginTransaction();
-        $pdo->prepare("UPDATE Settore SET id_responsabile = NULL WHERE id_responsabile = ?")->execute([$id]);
-        $pdo->prepare("DELETE FROM Iscritto WHERE id_iscritto = ?")->execute([$id]);
-        $pdo->commit();
-        ok(['message' => 'Eliminato']);
-    } catch (Exception $e) {
-        if ($pdo->inTransaction()) $pdo->rollBack();
-        err($e->getMessage());
-    }
+} catch (Exception $e) {
+    err('Errore Generale: ' . $e->getMessage(), 500);
 }
 ?>
