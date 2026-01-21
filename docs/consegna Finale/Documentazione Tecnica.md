@@ -29,7 +29,7 @@ In questa sezione vanno riportate le conclusioni della progettazione concettuale
 
 Lo schema ER utilizza entità, associazioni, gerarchie di ISA, identificatori misti e attributi composti.
 
-### 1.2 Assunzioni sul dominio
+### 1.2 Assunzioni 
 
 1. Si assume che il responsabile non sia un iscritto (che sia quindi un'entità a parte rispetto all'scritto) [ASSUNZIONE POI RIBALTATA]
 2. Si assume che un responsabile possa occuparsi di più settori contemporaneamente. [ASSUNZIONE POI RIBALTATA]
@@ -58,6 +58,87 @@ Lo schema ER utilizza entità, associazioni, gerarchie di ISA, identificatori mi
 1. **Vincolo di autorizzazione alla creazione delle prenotazioni:** Solo gli iscritti che ricoprono il ruolo di responsabile di settore (o i tecnici) possono creare prenotazioni.
 #### 1.4.2 Nuove Assunzioni (cambiamento principale)
 1. Si assume che ogni responsabile di settore sia necessariamente un iscritto dell’associazione; pertanto non è stata tolta l’entità autonoma Responsabile, ma il ruolo di responsabile è modellato come relazione tra Iscritto e Settore con attributi propri.
+
+### 1.5 Dominio degli attributi
+#### 1. Entità: Iscritto (Utente)
+
+Rappresenta tutti gli utenti del sistema. Il dominio del ruolo è vincolato per garantire la coerenza della logica RBAC (Role-Based Access Control).
+
+id_iscritto: int (Auto-increment, Primary Key)
+
+nome: string
+
+cognome: string
+
+email: string (Formato RFC 5322)
+
+password: string (Hash memorizzato come varchar(255))
+
+data_nascita: date
+
+ruolo: dom_ruoli
+
+dom_ruoli: {allievo, docente, tecnico}
+
+foto: string (Percorso URL o file path)
+
+#### 2. Entità: Settore
+
+Identifica le macro-aree della Play Room.
+
+id_settore: int
+
+nome_settore: string (es: "Studio A", "Sala Prove 1")
+
+descrizione: text
+
+#### 3. Entità: Sala
+
+id_sala: int
+
+nome_sala: string
+
+capienza: int (Valore > 0)
+
+#### 4. Entità: Dotazione
+
+id_dotazione: int
+
+nome_strumento: string
+
+stato_conservazione: dom_stato
+
+dom_stato: {nuovo, usato, danneggiato, in_riparazione}
+
+#### 5. Entità: Prenotazione
+
+Rappresenta l'occupazione di una sala in un determinato momento.
+
+id_prenotazione: int
+
+giorno_settimana: dom_giorno
+
+dom_giorno: {Lunedì, Martedì, Mercoledì, Giovedì, Venerdì, Sabato, Domenica}
+
+ora_inizio: time
+
+ora_fine: time (Vincolo: ora_fine > ora_inizio)
+
+#### 6. Associazione: Responsabile di (Associazione tra Iscritto e Settore)
+
+Relazione 1:1 tra Settore e Docente (Responsabile).
+
+data_nomina: date
+
+note: string
+
+#### 7. Associazione: Invito (Associazione tra Impegno e Allievo)
+
+Gestisce la partecipazione degli allievi alle sessioni create dai docenti.
+
+stato_accettazione: dom_accettazione
+
+dom_accettazione: {pendenza, accettato, rifiutato}
 
 
 ## 2. Progettazione Logica e Comandi SQL
